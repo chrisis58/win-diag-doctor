@@ -1,0 +1,9 @@
+spring:
+  ai:
+    dashscope:
+      api-key: ${AI_DASHSCOPE_API_KEY}
+  config:
+    name: win-diag-doctor
+
+server:
+  port: 8093
