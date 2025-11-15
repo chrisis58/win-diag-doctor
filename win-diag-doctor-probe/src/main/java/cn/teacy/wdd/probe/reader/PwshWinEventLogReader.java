@@ -32,9 +32,11 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
     @Override
     public List<WinEventLogEntry> readEventLogs(LogQueryRequest queryRequest) {
 
-        String powerShellCommand = buildPowerShellCommand(
-                queryRequest
-        );
+        String powerShellCommand = EventViewerFilterCommandBuilder.builder()
+                .logName(queryRequest.getLogName())
+                .levels(queryRequest.getLevels())
+                .maxEvents(queryRequest.getMaxEvents())
+                .build();
 
         String[] command = {
                 "cmd.exe",
@@ -102,15 +104,55 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
         }
     }
 
-    private String buildPowerShellCommand(LogQueryRequest queryRequest) {
-        String levelString = String.join(",",
-                queryRequest.getLevels().stream().map(LogLevel::getValue).map(String::valueOf).toArray(String[]::new)
-        );
+    public static class EventViewerFilterCommandBuilder {
 
-        return String.format(
-                "$OutputEncoding = [System.Text.Encoding]::UTF8; Get-WinEvent -FilterHashtable @{LogName='%s'; Level=%s} -MaxEvents %d | ConvertTo-Json",
-                queryRequest.getLogName(), levelString, queryRequest.getMaxEvents()
-        );
+        private final StringBuilder filterBuilder;
+        private int maxEvents;
+
+        private EventViewerFilterCommandBuilder() {
+            this.filterBuilder = new StringBuilder("$OutputEncoding = [System.Text.Encoding]::UTF8; Get-WinEvent -FilterHashtable @{");
+            this.maxEvents = 10;
+        }
+
+        public static EventViewerFilterCommandBuilder builder() {
+            return new EventViewerFilterCommandBuilder();
+        }
+
+        public String build() {
+            if (filterBuilder.length() >= 2) {
+                filterBuilder.setLength(filterBuilder.length() - 2);
+            }
+            filterBuilder.append("} -MaxEvents ").append(maxEvents).append(" | ConvertTo-Json");
+
+            return filterBuilder.toString();
+        }
+
+        public EventViewerFilterCommandBuilder logName(String logName) {
+            if (logName == null || logName.isEmpty()) {
+                return this;
+            }
+
+            filterBuilder.append("LogName='").append(logName).append("'; ");
+            return this;
+        }
+
+        public EventViewerFilterCommandBuilder levels(List<LogLevel> levels) {
+            if (levels == null || levels.isEmpty()) {
+                return this;
+            }
+
+            String levelString = String.join(",",
+                    levels.stream().map(LogLevel::getValue).map(String::valueOf).toArray(String[]::new)
+            );
+            filterBuilder.append("Level=@(").append(levelString).append("); ");
+            return this;
+        }
+
+        public EventViewerFilterCommandBuilder maxEvents(int maxEvents) {
+            this.maxEvents = maxEvents;
+            return this;
+        }
+
     }
 
 }

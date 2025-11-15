@@ -43,6 +43,7 @@ public class ProbeMainApplication {
                 .build();
 
         List<WinEventLogEntry> logEntries = reader.readEventLogs(queryRequest);
+        log.debug("读取到的日志条目: {}", logEntries);
 
         LogQueryContext logQueryContext = new LogQueryContext(queryRequest, logEntries);
 
