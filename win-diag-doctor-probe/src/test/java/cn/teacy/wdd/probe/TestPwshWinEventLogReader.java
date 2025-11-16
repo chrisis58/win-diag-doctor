@@ -39,8 +39,6 @@ public class TestPwshWinEventLogReader {
 
         List<WinEventLogEntry> logs = logReader.readEventLogs(request);
 
-        System.out.println(logs);
-
         assertNotNull(logs, "日志列表不应为 null");
 
         assertTrue(logs.size() <= 5, "返回的日志数量应不多于 " + request.getMaxEvents());
@@ -53,6 +51,29 @@ public class TestPwshWinEventLogReader {
                     firstLog.getLevel().equals("Error") || firstLog.getLevel().equals("Critical"),
                     "日志级别应为 '错误' 或 '严重'"
             );
+        }
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void testReadEventLogs_AllowNullFilter() {
+
+        LogQueryRequest queryRequest = LogQueryRequest.builder()
+                .logName(LogNames.SYSTEM)
+                .maxEvents(3)
+                .levels(null)
+                .build();
+
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+
+        assertNotNull(logs, "日志列表不应为 null");
+
+        assertTrue(logs.size() <= 3, "返回的日志数量应不多于 " + queryRequest.getMaxEvents());
+
+        if (!logs.isEmpty()) {
+            WinEventLogEntry firstLog = logs.get(0);
+            assertNotNull(firstLog.getMessage(), "日志消息不应为 null");
+            assertNotNull(firstLog.getProviderName(), "ProviderName 不应为 null");
         }
     }
 
