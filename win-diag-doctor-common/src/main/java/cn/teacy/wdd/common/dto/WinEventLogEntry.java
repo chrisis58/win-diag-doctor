@@ -38,8 +38,6 @@ public class WinEventLogEntry {
 
     /**
      * 事件创建时间 (JSON 返回的是 /Date(1763084761257)/ 格式)
-     * 我们暂时将其作为字符串接收，AI 可以理解这个格式，
-     * 或者我们稍后在服务端进行转换。
      */
     @JsonProperty("TimeCreated")
     private String timeCreated;

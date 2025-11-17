@@ -116,10 +116,14 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
 
         private final StringBuilder filterBuilder;
         private int maxEvents;
+        private Integer startHoursAgo;
+        private Integer endHoursAgo;
 
         private EventViewerFilterCommandBuilder() {
             this.filterBuilder = new StringBuilder("$OutputEncoding = [System.Text.Encoding]::UTF8; Get-WinEvent -FilterHashtable @{");
             this.maxEvents = 10;
+            this.startHoursAgo = null;
+            this.endHoursAgo = null;
         }
 
         public static EventViewerFilterCommandBuilder builder() {
@@ -162,6 +166,10 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
         }
 
         public EventViewerFilterCommandBuilder startHoursAgo(Integer startHoursAgo) {
+            if (this.endHoursAgo != null && startHoursAgo != null && startHoursAgo < this.endHoursAgo) {
+                throw new IllegalArgumentException("开始时间点不能早于结束时间点: startHoursAgo 应当大于或等于 endHoursAgo");
+            }
+            this.startHoursAgo = startHoursAgo;
             if (startHoursAgo != null && startHoursAgo > 0) {
                 String timeStr = LocalDateTime.now().minusHours(startHoursAgo).truncatedTo(ChronoUnit.SECONDS).format(ISO_FORMATTER);
                 filterBuilder.append("StartTime=[datetime]'").append(timeStr).append("'; ");
@@ -170,6 +178,10 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
         }
 
         public EventViewerFilterCommandBuilder endHoursAgo(Integer endHoursAgo) {
+            if (this.startHoursAgo != null && endHoursAgo != null && endHoursAgo > this.startHoursAgo) {
+                throw new IllegalArgumentException("结束时间点不能晚于开始时间点: endHoursAgo 应当小于或等于 startHoursAgo");
+            }
+            this.endHoursAgo = endHoursAgo;
             if (endHoursAgo != null && endHoursAgo > 0) {
                 String timeStr = LocalDateTime.now().minusHours(endHoursAgo).truncatedTo(ChronoUnit.SECONDS).format(ISO_FORMATTER);
                 filterBuilder.append("EndTime=[datetime]'").append(timeStr).append("'; ");

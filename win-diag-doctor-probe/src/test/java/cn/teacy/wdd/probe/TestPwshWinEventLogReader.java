@@ -84,11 +84,10 @@ public class TestPwshWinEventLogReader {
     @EnabledOnOs(OS.WINDOWS)
     void testReadEventLogs_EmptyResult() {
         LogQueryRequest queryRequest = LogQueryRequest.builder()
-                .logName(LogNames.SYSTEM)
+                .logName(LogNames.APPLICATION)
                 .levels(List.of(LogLevel.CRITICAL))
+                .endHoursAgo(300)
                 .maxEvents(3)
-                .startHoursAgo(1) // from 1 hour ago
-                .endHoursAgo(3) // to 3 hours ago, (invalid range)
                 .build();
 
         List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
@@ -96,6 +95,24 @@ public class TestPwshWinEventLogReader {
         assertNotNull(logs, "日志列表不应为 null");
 
         assertEquals(0, logs.size(), "预期没有日志返回，但实际有 " + logs.size() + " 条日志");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void testReadEventLogs_InvalidTimeRange() {
+        LogQueryRequest queryRequest = LogQueryRequest.builder()
+                .logName(LogNames.SYSTEM)
+                .maxEvents(3)
+                .startHoursAgo(1) // from 1 hour ago
+                .endHoursAgo(3) // to 3 hours ago
+                .build();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            logReader.readEventLogs(queryRequest);
+        });
+
+        assertNotNull(exception, "预期抛出 IllegalArgumentException，但没有抛出");
+
     }
 
     @Test
