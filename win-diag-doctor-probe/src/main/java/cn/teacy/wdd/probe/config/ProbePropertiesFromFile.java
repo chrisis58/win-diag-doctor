@@ -1,7 +1,7 @@
 package cn.teacy.wdd.probe.config;
 
 import cn.teacy.wdd.common.constants.ProbeConstants;
-import cn.teacy.wdd.common.exception.ProbeInitializationException;
+import cn.teacy.wdd.probe.exception.ProbeInitializationException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;

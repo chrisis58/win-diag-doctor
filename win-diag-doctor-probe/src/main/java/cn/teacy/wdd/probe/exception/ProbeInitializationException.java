@@ -1,4 +1,4 @@
-package cn.teacy.wdd.common.exception;
+package cn.teacy.wdd.probe.exception;
 
 public class ProbeInitializationException extends RuntimeException {
     public ProbeInitializationException(String message) {
