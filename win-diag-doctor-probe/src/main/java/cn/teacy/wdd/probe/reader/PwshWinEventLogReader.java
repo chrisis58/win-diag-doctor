@@ -118,6 +118,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
         private int maxEvents;
         private Integer startHoursAgo;
         private Integer endHoursAgo;
+        private boolean logNameSet = false;
 
         private EventViewerFilterCommandBuilder() {
             this.filterBuilder = new StringBuilder("$OutputEncoding = [System.Text.Encoding]::UTF8; Get-WinEvent -FilterHashtable @{");
@@ -131,6 +132,10 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
         }
 
         public String build() {
+            if (!logNameSet) {
+                throw new IllegalStateException("必须设置日志名称 (logName)");
+            }
+
             if (filterBuilder.length() >= 2) {
                 filterBuilder.setLength(filterBuilder.length() - 2);
             }
@@ -144,6 +149,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 return this;
             }
 
+            this.logNameSet = true;
             filterBuilder.append("LogName='").append(logName).append("'; ");
             return this;
         }
