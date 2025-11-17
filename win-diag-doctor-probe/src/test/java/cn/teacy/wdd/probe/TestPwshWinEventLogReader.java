@@ -12,10 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TestPwshWinEventLogReader {
 
@@ -74,6 +77,81 @@ public class TestPwshWinEventLogReader {
             WinEventLogEntry firstLog = logs.get(0);
             assertNotNull(firstLog.getMessage(), "日志消息不应为 null");
             assertNotNull(firstLog.getProviderName(), "ProviderName 不应为 null");
+        }
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void testReadEventLogs_EmptyResult() {
+        LogQueryRequest queryRequest = LogQueryRequest.builder()
+                .logName(LogNames.SYSTEM)
+                .levels(List.of(LogLevel.CRITICAL))
+                .maxEvents(3)
+                .startHoursAgo(1) // from 1 hour ago
+                .endHoursAgo(3) // to 3 hours ago, (invalid range)
+                .build();
+
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+
+        assertNotNull(logs, "日志列表不应为 null");
+
+        assertEquals(0, logs.size(), "预期没有日志返回，但实际有 " + logs.size() + " 条日志");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void testReadEventLogs_filteredByTimeShift() {
+
+        LogQueryRequest queryRequest = LogQueryRequest.builder()
+                .logName(LogNames.SYSTEM)
+                .maxEvents(3)
+                .startHoursAgo(3) // from 3 hours ago
+                .endHoursAgo(1) // to 1 hour ago
+                .build();
+
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+
+        assertNotNull(logs, "日志列表不应为 null");
+
+        assertTrue(logs.size() <= 3, "返回的日志数量应不多于 " + queryRequest.getMaxEvents());
+
+        if (!logs.isEmpty()) {
+            WinEventLogEntry firstLog = logs.get(0);
+            assertNotNull(firstLog.getMessage(), "日志消息不应为 null");
+            assertNotNull(firstLog.getProviderName(), "ProviderName 不应为 null");
+        }
+
+        Instant testRunTime = Instant.now();
+
+        for (WinEventLogEntry log : logs) {
+            assertNotNull(log.getMessage(), "日志消息不应为 null");
+            assertNotNull(log.getProviderName(), "ProviderName 不应为 null");
+
+            Instant logTime = parseMicrosoftTimestamp(log.getTimeCreated());
+
+            Instant boundaryStart = testRunTime.minus(queryRequest.getStartHoursAgo(), ChronoUnit.HOURS)
+                    .minusSeconds(5); // 允许5秒钟的时间偏差
+            Instant boundaryEnd = testRunTime.minus(queryRequest.getEndHoursAgo(), ChronoUnit.HOURS)
+                    .plusSeconds(5);
+
+            assertFalse(logTime.isBefore(boundaryStart), "日志时间 " + logTime + " 早于起始边界 " + boundaryStart);
+
+            assertFalse(logTime.isAfter(boundaryEnd), "日志时间 " + logTime + " 晚于结束边界 " + boundaryEnd);
+        }
+
+    }
+
+    private Instant parseMicrosoftTimestamp(String msTimestamp) {
+
+        Pattern pattern = Pattern.compile("/Date\\((\\d+)\\)/");
+        Matcher matcher = pattern.matcher(msTimestamp);
+
+        if (matcher.find()) {
+            long epochMilli = Long.parseLong(matcher.group(1));
+
+            return Instant.ofEpochMilli(epochMilli);
+        } else {
+            throw new IllegalArgumentException("无法解析的时间戳格式: " + msTimestamp);
         }
     }
 

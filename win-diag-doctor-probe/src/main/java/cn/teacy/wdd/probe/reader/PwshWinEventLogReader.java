@@ -11,6 +11,9 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +39,8 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 .logName(queryRequest.getLogName())
                 .levels(queryRequest.getLevels())
                 .maxEvents(queryRequest.getMaxEvents())
+                .startHoursAgo(queryRequest.getStartHoursAgo())
+                .endHoursAgo(queryRequest.getEndHoursAgo())
                 .build();
 
         String[] command = {
@@ -106,6 +111,9 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
 
     public static class EventViewerFilterCommandBuilder {
 
+        // yyyy-MM-ddTHH:mm:ss
+        private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
+
         private final StringBuilder filterBuilder;
         private int maxEvents;
 
@@ -150,6 +158,22 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
 
         public EventViewerFilterCommandBuilder maxEvents(int maxEvents) {
             this.maxEvents = maxEvents;
+            return this;
+        }
+
+        public EventViewerFilterCommandBuilder startHoursAgo(Integer startHoursAgo) {
+            if (startHoursAgo != null && startHoursAgo > 0) {
+                String timeStr = LocalDateTime.now().minusHours(startHoursAgo).truncatedTo(ChronoUnit.SECONDS).format(ISO_FORMATTER);
+                filterBuilder.append("StartTime=[datetime]'").append(timeStr).append("'; ");
+            }
+            return this;
+        }
+
+        public EventViewerFilterCommandBuilder endHoursAgo(Integer endHoursAgo) {
+            if (endHoursAgo != null && endHoursAgo > 0) {
+                String timeStr = LocalDateTime.now().minusHours(endHoursAgo).truncatedTo(ChronoUnit.SECONDS).format(ISO_FORMATTER);
+                filterBuilder.append("EndTime=[datetime]'").append(timeStr).append("'; ");
+            }
             return this;
         }
 

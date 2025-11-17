@@ -40,4 +40,20 @@ public class LogQueryRequest {
     @JsonProperty("maxEvents")
     private int maxEvents = 30;
 
+    /**
+     * 查询多早之前的日志，单位：小时
+     *
+     * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
+     */
+    @JsonProperty
+    private Integer startHoursAgo;
+
+    /**
+     * 查询到多早之前的日志，单位：小时
+     *
+     * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
+     */
+    @JsonProperty
+    private Integer endHoursAgo;
+
 }
