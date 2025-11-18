@@ -2,13 +2,13 @@ package cn.teacy.wdd.probe;
 
 import cn.teacy.wdd.common.constants.LogLevel;
 import cn.teacy.wdd.common.constants.LogNames;
-import cn.teacy.wdd.common.dto.LogQueryContext;
-import cn.teacy.wdd.common.dto.LogQueryRequest;
-import cn.teacy.wdd.common.dto.WinEventLogEntry;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.probe.config.ProbeConfig;
 import cn.teacy.wdd.probe.reader.IWinEventLogCleaner;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.shipper.IProbeShipper;
+import cn.teacy.wdd.protocol.WsMessageContext;
+import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
@@ -22,8 +22,6 @@ public class ProbeMainApplication {
 
         try {
             ApplicationContext context = new AnnotationConfigApplicationContext(ProbeConfig.class);
-
-            log.info("Spring Context 启动成功。");
 
             IWinEventLogReader reader = context.getBean(IWinEventLogReader.class);
             IProbeShipper shipper = context.getBean(IProbeShipper.class);
@@ -41,7 +39,7 @@ public class ProbeMainApplication {
             List<WinEventLogEntry> handled = cleaner.handle(logEntries);
             log.debug("清理后的日志条目: {}", handled);
 
-            boolean ret = shipper.ship("test-task-id", new LogQueryContext(queryRequest, handled));
+            boolean ret = shipper.ship("test-task-id", new WsMessageContext(queryRequest, handled));
             log.info("日志发送结果: {}", ret ? "成功" : "失败");
 
         } catch (Exception e) {

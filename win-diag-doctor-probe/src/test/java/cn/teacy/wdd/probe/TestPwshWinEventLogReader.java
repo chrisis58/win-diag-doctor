@@ -2,10 +2,10 @@ package cn.teacy.wdd.probe;
 
 import cn.teacy.wdd.common.constants.LogLevel;
 import cn.teacy.wdd.common.constants.LogNames;
-import cn.teacy.wdd.common.dto.LogQueryRequest;
-import cn.teacy.wdd.common.dto.WinEventLogEntry;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.reader.PwshWinEventLogReader;
+import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

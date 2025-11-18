@@ -1,7 +1,7 @@
 package cn.teacy.wdd.probe.reader;
 
-import cn.teacy.wdd.common.dto.LogQueryRequest;
-import cn.teacy.wdd.common.dto.WinEventLogEntry;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.protocol.command.LogQueryRequest;
 
 import java.util.List;
 

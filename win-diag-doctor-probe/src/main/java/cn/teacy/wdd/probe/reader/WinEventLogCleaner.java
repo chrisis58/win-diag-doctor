@@ -1,6 +1,6 @@
 package cn.teacy.wdd.probe.reader;
 
-import cn.teacy.wdd.common.dto.WinEventLogEntry;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

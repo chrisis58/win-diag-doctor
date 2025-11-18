@@ -15,6 +15,7 @@
         <module>win-diag-doctor-common</module>
         <module>win-diag-doctor-probe</module>
         <module>win-diag-doctor-app</module>
+        <module>win-diag-doctor-protocol</module>
     </modules>
 
     <description>

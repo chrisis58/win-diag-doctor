@@ -1,7 +1,7 @@
 package cn.teacy.wdd.probe.shipper;
 
-import cn.teacy.wdd.common.dto.LogQueryContext;
 import cn.teacy.wdd.probe.properties.IProbeProperties;
+import cn.teacy.wdd.protocol.WsMessageContext;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +27,7 @@ public class HttpProbeShipper implements IProbeShipper {
     private final ObjectMapper objectMapper;
 
     @Override
-    public boolean ship(String taskId, LogQueryContext queryContext) {
+    public boolean ship(String taskId, WsMessageContext queryContext) {
 
         try {
             HttpRequest request = HttpRequest.newBuilder()

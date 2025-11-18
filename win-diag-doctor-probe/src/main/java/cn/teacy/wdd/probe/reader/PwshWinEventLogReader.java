@@ -1,8 +1,8 @@
 package cn.teacy.wdd.probe.reader;
 
 import cn.teacy.wdd.common.constants.LogLevel;
-import cn.teacy.wdd.common.dto.LogQueryRequest;
-import cn.teacy.wdd.common.dto.WinEventLogEntry;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
