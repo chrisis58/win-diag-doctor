@@ -6,6 +6,7 @@ import cn.teacy.wdd.common.dto.LogQueryContext;
 import cn.teacy.wdd.common.dto.LogQueryRequest;
 import cn.teacy.wdd.common.dto.WinEventLogEntry;
 import cn.teacy.wdd.probe.config.ProbeConfig;
+import cn.teacy.wdd.probe.reader.IWinEventLogCleaner;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.shipper.IProbeShipper;
 import lombok.extern.slf4j.Slf4j;
@@ -26,17 +27,21 @@ public class ProbeMainApplication {
 
             IWinEventLogReader reader = context.getBean(IWinEventLogReader.class);
             IProbeShipper shipper = context.getBean(IProbeShipper.class);
+            IWinEventLogCleaner cleaner = context.getBean(IWinEventLogCleaner.class);
 
             LogQueryRequest queryRequest = LogQueryRequest.builder()
                     .logName(LogNames.SYSTEM)
                     .levels(List.of(LogLevel.CRITICAL, LogLevel.ERROR))
-                    .maxEvents(10)
+                    .maxEvents(3)
                     .build();
 
             List<WinEventLogEntry> logEntries = reader.readEventLogs(queryRequest);
             log.debug("读取到的日志条目: {}", logEntries);
 
-            boolean ret = shipper.ship("test-task-id", new LogQueryContext(queryRequest, logEntries));
+            List<WinEventLogEntry> handled = cleaner.handle(logEntries);
+            log.debug("清理后的日志条目: {}", handled);
+
+            boolean ret = shipper.ship("test-task-id", new LogQueryContext(queryRequest, handled));
             log.info("日志发送结果: {}", ret ? "成功" : "失败");
 
         } catch (Exception e) {
