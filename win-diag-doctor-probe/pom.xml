@@ -55,4 +55,81 @@
 
     </dependencies>
 
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>cn.teacy.wdd.probe.ProbeMainApplication</mainClass>
+                                </transformer>
+                            </transformers>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                <artifactId>launch4j-maven-plugin</artifactId>
+                <version>2.5.0</version>
+                <executions>
+                    <execution>
+                        <id>l4j-clui</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>launch4j</goal>
+                        </goals>
+                        <configuration>
+                            <headerType>console</headerType>
+
+                            <outfile>target/WddProbe.exe</outfile>
+
+                            <jar>target/${project.artifactId}-${project.version}.jar</jar>
+
+                            <errTitle>WddProbe Error</errTitle>
+
+                            <classPath>
+                                <mainClass>cn.teacy.wdd.probe.ProbeMainApplication</mainClass>
+                                <addDependencies>false</addDependencies>
+                                <preCp>anything</preCp>
+                            </classPath>
+
+                            <jre>
+                                <minVersion>17</minVersion>
+                                <runtimeBits>64</runtimeBits>
+                                <!-- 目前要求用户自行安装 JRE -->
+                                <path>%JAVA_HOME%</path>
+                            </jre>
+
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>${revision}</txtFileVersion>
+                                <fileDescription>Windows Diagnostic Doctor Probe</fileDescription>
+                                <copyright>Teacy</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>${revision}</txtProductVersion>
+                                <productName>WddProbe</productName>
+                                <internalName>WddProbe</internalName>
+                                <originalFilename>WddProbe.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 </project>
