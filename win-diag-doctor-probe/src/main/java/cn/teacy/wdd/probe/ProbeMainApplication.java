@@ -5,17 +5,13 @@ import cn.teacy.wdd.common.constants.LogNames;
 import cn.teacy.wdd.common.dto.LogQueryContext;
 import cn.teacy.wdd.common.dto.LogQueryRequest;
 import cn.teacy.wdd.common.dto.WinEventLogEntry;
-import cn.teacy.wdd.probe.config.IProbeProperties;
-import cn.teacy.wdd.probe.config.ProbePropertiesFromEnv;
+import cn.teacy.wdd.probe.config.ProbeConfig;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
-import cn.teacy.wdd.probe.reader.PwshWinEventLogReader;
-import cn.teacy.wdd.probe.shipper.HttpProbeShipper;
 import cn.teacy.wdd.probe.shipper.IProbeShipper;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import java.net.http.HttpClient;
-import java.time.Duration;
 import java.util.List;
 
 @Slf4j
@@ -23,29 +19,29 @@ public class ProbeMainApplication {
 
     public static void main(String[] args) {
 
-        ObjectMapper objectMapper = new ObjectMapper();
-        HttpClient httpClient = HttpClient.newBuilder()
-                .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
+        try {
+            ApplicationContext context = new AnnotationConfigApplicationContext(ProbeConfig.class);
 
-        IProbeProperties properties = new ProbePropertiesFromEnv();
-        IWinEventLogReader reader = new PwshWinEventLogReader(objectMapper);
-        IProbeShipper shipper = new HttpProbeShipper(properties, httpClient, objectMapper);
+            log.info("Spring Context 启动成功。");
 
-        LogQueryRequest queryRequest = LogQueryRequest.builder()
-                .logName(LogNames.SYSTEM)
-                .levels(List.of(LogLevel.CRITICAL, LogLevel.ERROR))
-                .maxEvents(10)
-                .build();
+            IWinEventLogReader reader = context.getBean(IWinEventLogReader.class);
+            IProbeShipper shipper = context.getBean(IProbeShipper.class);
 
-        List<WinEventLogEntry> logEntries = reader.readEventLogs(queryRequest);
-        log.debug("读取到的日志条目: {}", logEntries);
+            LogQueryRequest queryRequest = LogQueryRequest.builder()
+                    .logName(LogNames.SYSTEM)
+                    .levels(List.of(LogLevel.CRITICAL, LogLevel.ERROR))
+                    .maxEvents(10)
+                    .build();
 
-        LogQueryContext logQueryContext = new LogQueryContext(queryRequest, logEntries);
+            List<WinEventLogEntry> logEntries = reader.readEventLogs(queryRequest);
+            log.debug("读取到的日志条目: {}", logEntries);
 
-        boolean ret = shipper.ship("test-task-id", logQueryContext);
-        log.info("日志发送结果: {}", ret ? "成功" : "失败");
+            boolean ret = shipper.ship("test-task-id", new LogQueryContext(queryRequest, logEntries));
+            log.info("日志发送结果: {}", ret ? "成功" : "失败");
+
+        } catch (Exception e) {
+            log.error("探针启动或运行时发生致命错误: {}", e.getMessage(), e);
+        }
 
     }
 

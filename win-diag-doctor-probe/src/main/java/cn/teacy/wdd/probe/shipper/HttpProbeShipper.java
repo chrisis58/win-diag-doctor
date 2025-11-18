@@ -1,11 +1,12 @@
 package cn.teacy.wdd.probe.shipper;
 
 import cn.teacy.wdd.common.dto.LogQueryContext;
-import cn.teacy.wdd.probe.config.IProbeProperties;
+import cn.teacy.wdd.probe.properties.IProbeProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URI;
@@ -15,6 +16,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 
 @Slf4j
+@Component
 @RequiredArgsConstructor
 public class HttpProbeShipper implements IProbeShipper {
 
@@ -55,7 +57,7 @@ public class HttpProbeShipper implements IProbeShipper {
             return false;
         }
 
-        return false;
+        return true;
     }
 
 }

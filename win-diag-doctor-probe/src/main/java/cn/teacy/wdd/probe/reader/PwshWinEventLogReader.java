@@ -6,6 +6,7 @@ import cn.teacy.wdd.common.dto.WinEventLogEntry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -22,6 +23,7 @@ import java.util.concurrent.TimeUnit;
  * 使用 PowerShell 读取 Windows 事件日志的实现
  */
 @Slf4j
+@Component
 public class PwshWinEventLogReader implements IWinEventLogReader {
 
     private static final int TIMEOUT_SECONDS = 30;

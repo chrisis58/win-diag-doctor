@@ -1,8 +1,12 @@
-package cn.teacy.wdd.probe.config;
+package cn.teacy.wdd.probe.properties;
 
 import cn.teacy.wdd.common.constants.ProbeConstants;
 import cn.teacy.wdd.probe.exception.ProbeInitializationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Condition;
+import org.springframework.context.annotation.ConditionContext;
+import org.springframework.core.type.AnnotatedTypeMetadata;
+import org.springframework.lang.NonNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +18,13 @@ import static cn.teacy.wdd.common.constants.ProbeConstants.CONFIG_FILE_NAME;
 
 @Slf4j
 public class ProbePropertiesFromFile implements IProbeProperties {
+
+    public static class MissingProbeEnvVarsCondition implements Condition {
+        @Override
+        public boolean matches(@NonNull ConditionContext context, @NonNull AnnotatedTypeMetadata metadata) {
+            return !new ProbePropertiesFromEnv.AllProbeEnvVarsCondition().matches(context, metadata);
+        }
+    }
 
     private final Properties properties = new Properties();
 

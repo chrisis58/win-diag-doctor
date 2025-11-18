@@ -1,4 +1,4 @@
-package cn.teacy.wdd.probe.config;
+package cn.teacy.wdd.probe.properties;
 
 public interface IProbeProperties {
 
