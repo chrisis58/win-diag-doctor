@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -25,10 +26,14 @@ public class WsMessageMapper {
             "cn.teacy.wdd.protocol.command"
     };
 
-    private final Map<String, Class<?>> identifierMap = new HashMap<>();
+    private final Map<String, Class<? extends WsMessagePayload>> identifierMap = new HashMap<>();
+
+    @Getter
+    private Set<Class<? extends WsMessagePayload>> registeredPayloadClasses;
 
     private final ObjectMapper objectMapper;
 
+    @SuppressWarnings("unchecked")
     @PostConstruct
     public void init() {
         log.debug("开始扫描 WsMsg 消息类型...");
@@ -49,6 +54,11 @@ public class WsMessageMapper {
 
                     Class<?> clazz = ClassUtils.forName(className, classLoader);
 
+                    if (!WsMessagePayload.class.isAssignableFrom(clazz)) {
+                        log.warn("类 {} 不是 WsMessagePayload 的子类，跳过注册", clazz.getName());
+                        continue;
+                    }
+
                     WsProtocol annotation = clazz.getAnnotation(WsProtocol.class);
                     if (annotation != null) {
                         String identifier = annotation.identifier();
@@ -59,7 +69,7 @@ public class WsMessageMapper {
                                     " (Class: " + clazz.getName() + ")");
                         }
 
-                        identifierMap.put(identifier, clazz);
+                        identifierMap.put(identifier, (Class<? extends WsMessagePayload>) clazz);
                         log.debug("注册消息类型: {} -> {}", identifier, clazz.getSimpleName());
                     }
                 } catch (ClassNotFoundException | LinkageError e) {
@@ -67,9 +77,11 @@ public class WsMessageMapper {
                 }
             }
         }
+        registeredPayloadClasses = Set.copyOf(identifierMap.values()); // unmodifiable
         log.info("WsMsg 扫描完成，共注册 {} 种消息类型", identifierMap.size());
     }
 
+    @SuppressWarnings("unchecked")
     public WsMessage<? extends WsMessagePayload> read(String message) throws JsonProcessingException {
 
         JsonNode rootNode = objectMapper.readTree(message);
