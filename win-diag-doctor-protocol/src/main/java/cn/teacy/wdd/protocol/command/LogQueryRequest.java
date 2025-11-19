@@ -1,11 +1,9 @@
 package cn.teacy.wdd.protocol.command;
 
 import cn.teacy.wdd.common.constants.LogLevel;
+import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocol;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -13,8 +11,9 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@EqualsAndHashCode(callSuper = true)
 @WsProtocol(identifier = "command:logs:query")
-public class LogQueryRequest {
+public class LogQueryRequest extends WsMessagePayload {
 
     /**
      * 要查询的日志名称

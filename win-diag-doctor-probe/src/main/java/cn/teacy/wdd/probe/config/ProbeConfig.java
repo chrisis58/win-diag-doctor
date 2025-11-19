@@ -3,7 +3,7 @@ package cn.teacy.wdd.probe.config;
 import cn.teacy.wdd.probe.properties.IProbeProperties;
 import cn.teacy.wdd.probe.properties.ProbePropertiesFromEnv;
 import cn.teacy.wdd.probe.properties.ProbePropertiesFromFile;
-import cn.teacy.wdd.protocol.WsPayloadExtractor;
+import cn.teacy.wdd.protocol.WsMessageMapper;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.*;
 
@@ -28,8 +28,8 @@ public class ProbeConfig {
     }
 
     @Bean
-    public WsPayloadExtractor wsPayloadExtractor(ObjectMapper objectMapper) {
-        return new WsPayloadExtractor(objectMapper);
+    public WsMessageMapper wsPayloadExtractor(ObjectMapper objectMapper) {
+        return new WsMessageMapper(objectMapper);
     }
 
     @Bean

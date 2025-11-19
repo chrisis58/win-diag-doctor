@@ -9,7 +9,7 @@ import java.util.concurrent.atomic.AtomicLong;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class WsMessage {
+public class WsMessage<P extends WsMessagePayload> {
 
     private static final AtomicLong MSG_COUNTER = new AtomicLong(1);
 
@@ -26,9 +26,9 @@ public class WsMessage {
     /**
      * 消息数据
      */
-    private Object payload;
+    private P payload;
 
-    public WsMessage(Object payload) {
+    public WsMessage(P payload) {
         WsProtocol annotation = payload.getClass().getAnnotation(WsProtocol.class);
 
         if (annotation == null) {

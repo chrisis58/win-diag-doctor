@@ -1,8 +1,9 @@
 package cn.teacy.wdd.probe;
 
+import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.protocol.WsMessage;
-import cn.teacy.wdd.protocol.WsPayloadExtractor;
+import cn.teacy.wdd.protocol.WsMessageMapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.AfterEach;
@@ -15,13 +16,11 @@ import org.springframework.context.annotation.Configuration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
-public class TestPayloadExtractor {
+public class TestWsMessageMapper {
 
     private AnnotationConfigApplicationContext context;
 
-    private ObjectMapper objectMapper;
-
-    private WsPayloadExtractor protocolExtractor;
+    private WsMessageMapper wsMessageMapper;
 
     @BeforeEach
     void setUp() {
@@ -29,8 +28,7 @@ public class TestPayloadExtractor {
         context.register(TestConfig.class);
         context.refresh();
 
-        objectMapper = context.getBean(ObjectMapper.class);
-        protocolExtractor = context.getBean(WsPayloadExtractor.class);
+        wsMessageMapper = context.getBean(WsMessageMapper.class);
     }
 
     @AfterEach
@@ -41,14 +39,13 @@ public class TestPayloadExtractor {
     }
 
     @Test
-    public void testExtract() throws JsonProcessingException {
-        String message = "{\"mid\":\"m-00001\",\"identifier\":\"command:logs:query\",\"data\":{\"logName\":null,\"levels\":null,\"maxEvents\":0,\"startHoursAgo\":1,\"endHoursAgo\":null}}";
-        WsMessage wsMessage = objectMapper.readValue(message, WsMessage.class);
+    public void testReadValue() throws JsonProcessingException {
+        String message = "{\"mid\":\"m-00001\",\"identifier\":\"command:logs:query\",\"payload\":{\"logName\":null,\"levels\":null,\"maxEvents\":0,\"startHoursAgo\":1,\"endHoursAgo\":null}}";
 
-        Object result = protocolExtractor.extract(wsMessage);
-        System.out.println("Extracted object: " + result);
+        WsMessage<? extends WsMessagePayload> wsMessage = wsMessageMapper.read(message);
+        System.out.println("Extracted object: " + wsMessage);
 
-        LogQueryRequest extractedRequest = assertInstanceOf(LogQueryRequest.class, result);
+        LogQueryRequest extractedRequest = assertInstanceOf(LogQueryRequest.class, wsMessage.getPayload());
         assertEquals(1, extractedRequest.getStartHoursAgo());
     }
 
@@ -62,8 +59,8 @@ public class TestPayloadExtractor {
         }
 
         @Bean
-        public WsPayloadExtractor wsPayloadExtractor(ObjectMapper objectMapper) {
-            return new WsPayloadExtractor(objectMapper);
+        public WsMessageMapper wsPayloadExtractor(ObjectMapper objectMapper) {
+            return new WsMessageMapper(objectMapper);
         }
 
     }
