@@ -1,6 +1,6 @@
 package cn.teacy.wdd.probe.reader;
 
-import cn.teacy.wdd.common.constants.LogLevel;
+import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import com.fasterxml.jackson.core.type.TypeReference;

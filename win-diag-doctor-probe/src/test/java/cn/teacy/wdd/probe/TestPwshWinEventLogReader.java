@@ -1,6 +1,6 @@
 package cn.teacy.wdd.probe;
 
-import cn.teacy.wdd.common.constants.LogLevel;
+import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.constants.LogNames;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;

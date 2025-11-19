@@ -1,6 +1,6 @@
 package cn.teacy.wdd.protocol.command;
 
-import cn.teacy.wdd.common.constants.LogLevel;
+import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocol;
 import lombok.*;
@@ -25,7 +25,7 @@ public class LogQueryRequest extends WsMessagePayload {
     /**
      * 要查询的日志级别
      *
-     * @see cn.teacy.wdd.common.constants.LogLevel
+     * @see LogLevel
      */
     private List<LogLevel> levels;
 

@@ -1,4 +1,4 @@
-package cn.teacy.wdd.common.constants;
+package cn.teacy.wdd.common.enums;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
