@@ -1,49 +1,42 @@
 package cn.teacy.wdd.probe;
 
-import cn.teacy.wdd.common.enums.LogLevel;
-import cn.teacy.wdd.common.constants.LogNames;
-import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.probe.config.ProbeConfig;
-import cn.teacy.wdd.probe.reader.IWinEventLogCleaner;
-import cn.teacy.wdd.probe.reader.IWinEventLogReader;
-import cn.teacy.wdd.probe.shipper.IProbeShipper;
-import cn.teacy.wdd.protocol.WsMessageContext;
-import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.probe.websocket.ProbeWsClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
-import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
 
 @Slf4j
 public class ProbeMainApplication {
 
+    private static final CountDownLatch KEEP_ALIVE_LATCH = new CountDownLatch(1);
+
     public static void main(String[] args) {
 
+        AnnotationConfigApplicationContext context = null;
+
         try {
-            ApplicationContext context = new AnnotationConfigApplicationContext(ProbeConfig.class);
+            context = new AnnotationConfigApplicationContext(ProbeConfig.class);
 
-            IWinEventLogReader reader = context.getBean(IWinEventLogReader.class);
-            IProbeShipper shipper = context.getBean(IProbeShipper.class);
-            IWinEventLogCleaner cleaner = context.getBean(IWinEventLogCleaner.class);
+            ProbeWsClient probeWsClient = context.getBean(ProbeWsClient.class);
 
-            LogQueryRequest queryRequest = LogQueryRequest.builder()
-                    .logName(LogNames.SYSTEM)
-                    .levels(List.of(LogLevel.CRITICAL, LogLevel.ERROR))
-                    .maxEvents(3)
-                    .build();
+            probeWsClient.connect();
 
-            List<WinEventLogEntry> logEntries = reader.readEventLogs(queryRequest);
-            log.debug("读取到的日志条目: {}", logEntries);
+            // 当 JVM 关闭时，释放 latch
+            Runtime.getRuntime().addShutdownHook(new Thread(KEEP_ALIVE_LATCH::countDown));
+            KEEP_ALIVE_LATCH.await();
 
-            List<WinEventLogEntry> handled = cleaner.handle(logEntries);
-            log.debug("清理后的日志条目: {}", handled);
-
-            boolean ret = shipper.ship("test-task-id", new WsMessageContext(queryRequest, handled));
-            log.info("日志发送结果: {}", ret ? "成功" : "失败");
-
+        } catch (InterruptedException e) {
+            log.warn(e.getMessage());
+            Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("探针启动或运行时发生致命错误: {}", e.getMessage(), e);
+            if (context != null) {
+                context.close();
+            }
+            System.exit(1);
         }
 
     }

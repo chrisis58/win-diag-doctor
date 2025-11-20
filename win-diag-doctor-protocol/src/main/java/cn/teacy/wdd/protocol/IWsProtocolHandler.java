@@ -2,6 +2,6 @@ package cn.teacy.wdd.protocol;
 
 public interface IWsProtocolHandler {
 
-    void handle(WsMessagePayload payload);
+    void handle(String taskId, WsMessagePayload payload);
 
 }

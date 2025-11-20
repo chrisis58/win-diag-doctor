@@ -1,7 +1,9 @@
 package cn.teacy.wdd.probe.shipper;
 
 import cn.teacy.wdd.probe.properties.IProbeProperties;
+import cn.teacy.wdd.protocol.WsMessage;
 import cn.teacy.wdd.protocol.WsMessageContext;
+import cn.teacy.wdd.protocol.WsMessagePayload;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -27,7 +29,7 @@ public class HttpProbeShipper implements IProbeShipper {
     private final ObjectMapper objectMapper;
 
     @Override
-    public boolean ship(String taskId, WsMessageContext queryContext) {
+    public boolean ship(String taskId, WsMessagePayload payload) {
 
         try {
             HttpRequest request = HttpRequest.newBuilder()
@@ -35,8 +37,9 @@ public class HttpProbeShipper implements IProbeShipper {
                     .timeout(Duration.ofMinutes(2))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(queryContext)))
-                    .build();
+                    .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(
+                            new WsMessage<>(taskId, payload)
+                    ))).build();
 
             HttpResponse<String> send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 

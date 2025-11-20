@@ -15,7 +15,8 @@ public class ProbePropertiesFromEnv implements IProbeProperties {
 
             return env.containsProperty("WDD_SERVER_HOST")
                     && env.containsProperty("WDD_PROBE_SECRET")
-                    && env.containsProperty("WDD_PROBE_ID");
+                    && env.containsProperty("WDD_PROBE_ID")
+                    && env.containsProperty("WDD_WS_SERVER_HOST");
         }
     }
 
@@ -32,5 +33,10 @@ public class ProbePropertiesFromEnv implements IProbeProperties {
     @Override
     public String getProbeId() {
         return System.getenv("WDD_PROBE_ID");
+    }
+
+    @Override
+    public String getWsServerHost() {
+        return System.getenv("WDD_WS_SERVER_HOST");
     }
 }

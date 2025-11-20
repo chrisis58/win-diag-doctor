@@ -74,4 +74,8 @@ public class ProbePropertiesFromFile implements IProbeProperties {
         return properties.getProperty(ProbeConstants.ConfigKeys.SERVER_URL);
     }
 
+    public String getWsServerHost() {
+        return properties.getProperty(ProbeConstants.ConfigKeys.WS_SERVER_URL);
+    }
+
 }

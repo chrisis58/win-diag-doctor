@@ -1,0 +1,194 @@
+package cn.teacy.wdd.probe.websocket;
+
+import cn.teacy.wdd.common.enums.ExecuteOrder;
+import cn.teacy.wdd.probe.properties.IProbeProperties;
+import cn.teacy.wdd.protocol.*;
+import cn.teacy.wdd.protocol.event.ProbeHeartbeat;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.annotation.PreDestroy;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
+import java.time.Duration;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.*;
+
+import static cn.teacy.wdd.common.constants.ServiceConstants.WS_PROBE_ENDPOINT;
+
+@Slf4j
+@Component
+@RequiredArgsConstructor
+public class ProbeWsClient implements WebSocket.Listener {
+
+    private final IProbeProperties properties;
+    private final HttpClient httpClient;
+    private final WsMessageMapper wsMessageMapper;
+    private final WsProtocolHandlerRegistry registry;
+    private final ObjectMapper objectMapper;
+
+    private WebSocket webSocket;
+    private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private boolean isReconnecting = false;
+    private ScheduledFuture<?> heartbeatTask;
+
+    public void connect() {
+        try {
+            String wsUrl = String.format("%s%s?probeId=%s",
+                    properties.getWsServerHost(),
+                    WS_PROBE_ENDPOINT,
+                    properties.getProbeId()
+            );
+            log.info("Connecting to WebSocket: {}", wsUrl);
+
+            // 建立连接并携带认证头
+            httpClient.newWebSocketBuilder()
+                    .header("Authorization", "Bearer " + properties.getProbeSecret())
+                    .connectTimeout(Duration.ofSeconds(10))
+                    .buildAsync(URI.create(wsUrl), this)
+                    .thenAccept(ws -> {
+                        this.webSocket = ws;
+                        this.isReconnecting = false;
+                    })
+                    .exceptionally(ex -> {
+                        log.error("Fail to acquire WebSocket connect: {}", ex.getMessage());
+                        scheduleReconnect();
+                        return null;
+                    });
+
+        } catch (Exception e) {
+            log.error("Fail to initialize WebSocket", e);
+            scheduleReconnect();
+        }
+    }
+
+    /**
+     * 发送文本消息 (供 Handler 使用)
+     */
+    public void send(String text) {
+        if (webSocket != null && !webSocket.isOutputClosed()) {
+            webSocket.sendText(text, true);
+        } else {
+            log.warn("Failed to send message: WebSocket not connected");
+        }
+    }
+
+    @Override
+    public void onOpen(WebSocket webSocket) {
+        WebSocket.Listener.super.onOpen(webSocket);
+        this.startHeartbeat();
+    }
+
+    @Override
+    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
+
+        String msg = data.toString();
+        handleIncomingMessage(msg);
+
+        return WebSocket.Listener.super.onText(webSocket, data, last);
+    }
+
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+        log.warn("WebSocket Connection closed: code={}, reason={}", statusCode, reason);
+        stopHeartbeat();
+
+        this.webSocket = null;
+        scheduleReconnect();
+        return WebSocket.Listener.super.onClose(webSocket, statusCode, reason);
+    }
+
+    @Override
+    public void onError(WebSocket webSocket, Throwable error) {
+        log.error("WebSocket encounter error", error);
+        stopHeartbeat();
+
+        this.webSocket = null;
+        scheduleReconnect();
+    }
+
+    @PreDestroy
+    public void destroy() {
+        log.debug("Cleaning up ProbeWsClient...");
+
+        stopHeartbeat();
+
+        if (!scheduler.isShutdown()) {
+            scheduler.shutdownNow();
+        }
+
+        if (webSocket != null && !webSocket.isOutputClosed()) {
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Probe shutting down");
+        }
+    }
+
+    private void handleIncomingMessage(String msg) {
+        try {
+            WsMessage<? extends WsMessagePayload> wsMessage = wsMessageMapper.read(msg);
+
+            Class<?> payloadClass = wsMessage.getPayload().getClass();
+            Map<ExecuteOrder, Set<IWsProtocolHandler>> handlers = registry.getHandlers(payloadClass);
+
+            if (handlers != null) {
+                for (ExecuteOrder order : ExecuteOrder.values()) {
+                    Set<IWsProtocolHandler> orderHandlers = handlers.get(order);
+                    if (orderHandlers != null) {
+                        for (IWsProtocolHandler handler : orderHandlers) {
+                            try {
+                                handler.handle(wsMessage.getTaskId(), wsMessage.getPayload());
+                            } catch (Exception e) {
+                                log.error("Handler fail: {}", handler.getClass().getSimpleName(), e);
+                            }
+                        }
+                    }
+                }
+            }
+
+        } catch (JsonProcessingException e) {
+            log.error("Fail to deserialize message: {}", msg, e);
+        }
+    }
+
+    private void scheduleReconnect() {
+        if (isReconnecting) return;
+        isReconnecting = true;
+
+        log.info("Retry connecting after 5s...");
+        scheduler.schedule(this::connect, 5, TimeUnit.SECONDS);
+    }
+
+    private void startHeartbeat() {
+        stopHeartbeat();
+
+        this.heartbeatTask = scheduler.scheduleAtFixedRate(() -> {
+            if (this.webSocket == null || this.webSocket.isOutputClosed()) {
+                log.warn("Skipping heartbeat: WebSocket not connected");
+                return;
+            }
+
+            try {
+                WsMessage<ProbeHeartbeat> heartbeatMsg = new WsMessage<>(new ProbeHeartbeat());
+
+                this.send(objectMapper.writeValueAsString(heartbeatMsg));
+                log.debug("Heartbeat sent, mid: {}", heartbeatMsg.getMid());
+            } catch (JsonProcessingException e) {
+                log.error("Fail to serialize heartbeat: ", e);
+            } catch (Exception e) {
+                log.error("Error occur during sending heartbeat", e);
+            }
+        }, 10, 30, TimeUnit.SECONDS);
+    }
+
+    private void stopHeartbeat() {
+        if (heartbeatTask != null && !heartbeatTask.isCancelled()) {
+            heartbeatTask.cancel(true);
+            log.info("Stop heartbeat task");
+        }
+        heartbeatTask = null;
+    }
+}

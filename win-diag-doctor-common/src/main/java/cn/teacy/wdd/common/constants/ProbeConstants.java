@@ -24,6 +24,11 @@ public interface ProbeConstants {
          */
         String PROBE_SECRET = "wddp.secret";
 
+        /**
+         * 服务器 websocket 地址
+         */
+        String WS_SERVER_URL = "ws.server.host";
+
     }
 
 }

@@ -23,7 +23,8 @@ public class WsMessageMapper {
 
     private static final String[] PACKAGES_TO_SCAN = {
             "cn.teacy.wdd.protocol.response",
-            "cn.teacy.wdd.protocol.command"
+            "cn.teacy.wdd.protocol.command",
+            "cn.teacy.wdd.protocol.event"
     };
 
     private final Map<String, Class<? extends WsMessagePayload>> identifierMap = new HashMap<>();

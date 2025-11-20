@@ -4,6 +4,7 @@ import cn.teacy.wdd.probe.properties.IProbeProperties;
 import cn.teacy.wdd.probe.properties.ProbePropertiesFromEnv;
 import cn.teacy.wdd.probe.properties.ProbePropertiesFromFile;
 import cn.teacy.wdd.protocol.WsMessageMapper;
+import cn.teacy.wdd.protocol.WsProtocolHandlerRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.*;
 
@@ -43,6 +44,11 @@ public class ProbeConfig {
     @Conditional(ProbePropertiesFromFile.MissingProbeEnvVarsCondition.class)
     public IProbeProperties probePropertiesFromFile() {
         return new ProbePropertiesFromFile();
+    }
+
+    @Bean
+    public WsProtocolHandlerRegistry wsProtocolHandlerRegistry(WsMessageMapper wsMessageMapper) {
+        return new WsProtocolHandlerRegistry(wsMessageMapper, "cn.teacy.wdd.probe.websocket.handler");
     }
 
 }

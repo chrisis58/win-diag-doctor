@@ -17,4 +17,9 @@ public interface IProbeProperties {
      */
     String getServerHost();
 
+    /**
+     * 获取 WebSocket 服务器主机
+     */
+    String getWsServerHost();
+
 }

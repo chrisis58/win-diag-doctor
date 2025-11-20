@@ -19,7 +19,7 @@ public class TestLogQueryRequestHandler implements IWsProtocolHandler {
     private final IWinEventLogReader reader;
 
     @Override
-    public void handle(WsMessagePayload payload) {
+    public void handle(String taskId, WsMessagePayload payload) {
 
         LogQueryRequest queryRequest = (LogQueryRequest) payload;
 

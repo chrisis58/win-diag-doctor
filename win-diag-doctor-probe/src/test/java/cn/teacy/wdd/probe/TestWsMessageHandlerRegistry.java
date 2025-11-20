@@ -54,7 +54,7 @@ public class TestWsMessageHandlerRegistry {
             Set<IWsProtocolHandler> orderHandlers = handlers.get(executeOrder);
             if (orderHandlers != null) {
                 for (IWsProtocolHandler handler : orderHandlers) {
-                    handler.handle(wsMessage.getPayload());
+                    handler.handle(wsMessage.getTaskId(), wsMessage.getPayload());
                 }
             }
         }

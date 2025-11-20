@@ -1,6 +1,6 @@
 package cn.teacy.wdd.probe.shipper;
 
-import cn.teacy.wdd.protocol.WsMessageContext;
+import cn.teacy.wdd.protocol.WsMessagePayload;
 
 /**
  * 日志数据发送器接口
@@ -12,9 +12,9 @@ public interface IProbeShipper {
      * 发送日志数据
      *
      * @param taskId   任务ID
-     * @param queryContext 日志查询上下文，包含查询请求和日志条目列表
+     * @param payload 发送的消息负载
      * @return 发送是否成功
      */
-    boolean ship(String taskId, WsMessageContext queryContext);
+    boolean ship(String taskId, WsMessagePayload payload);
 
 }

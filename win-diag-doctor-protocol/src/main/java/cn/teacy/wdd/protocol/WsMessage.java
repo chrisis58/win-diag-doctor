@@ -19,6 +19,11 @@ public class WsMessage<P extends WsMessagePayload> {
     private String mid;
 
     /**
+     * 任务标识，用于关联请求和响应
+     */
+    private String taskId;
+
+    /**
      * 消息类型
      */
     private String identifier;
@@ -38,12 +43,32 @@ public class WsMessage<P extends WsMessagePayload> {
         }
 
         this.identifier = annotation.identifier();
+        this.taskId = generateTaskId();
+        this.mid = generateMid();
+        this.payload = payload;
+    }
+
+    public WsMessage(String taskId, P payload) {
+        WsProtocol annotation = payload.getClass().getAnnotation(WsProtocol.class);
+
+        if (annotation == null) {
+            throw new IllegalArgumentException(
+                    String.format("Class [%s] is missing @WsMsg annotation", payload.getClass().getSimpleName())
+            );
+        }
+
+        this.identifier = annotation.identifier();
+        this.taskId = taskId != null ? taskId : generateTaskId();
         this.mid = generateMid();
         this.payload = payload;
     }
 
     private static String generateMid() {
         return String.format("m-%05d", MSG_COUNTER.getAndIncrement());
+    }
+
+    private String generateTaskId() {
+        return String.format("t-%05d", MSG_COUNTER.getAndIncrement());
     }
 
 }
