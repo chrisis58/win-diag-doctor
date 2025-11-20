@@ -1,9 +1,8 @@
 package cn.teacy.wdd.probe.shipper;
 
+import cn.teacy.wdd.common.entity.TaskExecutionResult;
+import cn.teacy.wdd.common.enums.ExecutionResultEndpoint;
 import cn.teacy.wdd.probe.properties.IProbeProperties;
-import cn.teacy.wdd.protocol.WsMessage;
-import cn.teacy.wdd.protocol.WsMessageContext;
-import cn.teacy.wdd.protocol.WsMessagePayload;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,23 +21,20 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class HttpProbeShipper implements IProbeShipper {
 
-    private static final String ANALYZE_ENDPOINT = "/api/analyze/logs/resolve";
-
     private final IProbeProperties properties;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     @Override
-    public boolean ship(String taskId, WsMessagePayload payload) {
-
+    public <T> boolean ship(ExecutionResultEndpoint endpoint, TaskExecutionResult<T> result) {
         try {
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(properties.getServerHost() + ANALYZE_ENDPOINT))
+                    .uri(URI.create(properties.getServerHost() + endpoint.getEndpoint()))
                     .timeout(Duration.ofMinutes(2))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(
-                            new WsMessage<>(taskId, payload)
+                            result
                     ))).build();
 
             HttpResponse<String> send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
@@ -62,5 +58,4 @@ public class HttpProbeShipper implements IProbeShipper {
 
         return true;
     }
-
 }

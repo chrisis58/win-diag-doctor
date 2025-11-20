@@ -1,16 +1,21 @@
 package cn.teacy.wdd.controller;
 
+import cn.teacy.wdd.common.constants.LogNames;
+import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.protocol.WsMessageContext;
+import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.service.LogQueryService;
 import com.felipestanzani.jtoon.Delimiter;
 import com.felipestanzani.jtoon.EncodeOptions;
 import com.felipestanzani.jtoon.JToon;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class LogAnalyseController {
 
     private final ChatClient chatClient;
+    private final LogQueryService logQueryService;
 
     @PostMapping("/resolve")
     public String analyse(@RequestBody WsMessageContext queryContext) {
@@ -31,6 +37,17 @@ public class LogAnalyseController {
                         + toonEncoded
                 ).call()
                 .content();
+    }
+
+    @GetMapping("/query/{probeId}")
+    public ResponseEntity<List<WinEventLogEntry>> queryLogs(@PathVariable("probeId") String probeId) {
+        List<WinEventLogEntry> logEntries = logQueryService.queryLog(probeId, LogQueryRequest.builder()
+                .levels(List.of(LogLevel.CRITICAL, LogLevel.ERROR))
+                .logName(LogNames.SYSTEM)
+                .maxEvents(10)
+                .build());
+
+        return ResponseEntity.ok(logEntries);
     }
 
 }

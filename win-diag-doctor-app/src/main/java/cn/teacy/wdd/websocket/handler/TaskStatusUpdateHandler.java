@@ -4,10 +4,8 @@ import cn.teacy.wdd.protocol.IWsProtocolHandler;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocolHandler;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 @Slf4j
-@Component
 @WsProtocolHandler
 public class TaskStatusUpdateHandler implements IWsProtocolHandler {
 
