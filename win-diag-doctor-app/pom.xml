@@ -67,6 +67,11 @@
         </dependency>
 
         <dependency>
+            <groupId>com.alibaba.cloud.ai</groupId>
+            <artifactId>spring-ai-alibaba-studio</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>com.felipestanzani</groupId>
             <artifactId>jtoon</artifactId>
         </dependency>

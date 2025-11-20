@@ -3,6 +3,7 @@ package cn.teacy.wdd.protocol.command;
 import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocol;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import lombok.*;
 
 import java.util.List;
@@ -20,6 +21,7 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @see cn.teacy.wdd.common.constants.LogNames
      */
+    @JsonPropertyDescription("需要查询的日志名称，例如 `Application`, `System`, `Security` 等。")
     private String logName;
 
     /**
@@ -27,18 +29,21 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @see LogLevel
      */
+    @JsonPropertyDescription("需要查询的日志级别列表")
     private List<LogLevel> levels;
 
     /**
      * 最大事件数
      */
-    private int maxEvents = 30;
+    @JsonPropertyDescription("最大事件数，默认10")
+    private int maxEvents = 10;
 
     /**
      * 查询多早之前的日志，单位：小时
      *
      * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
      */
+    @JsonPropertyDescription("查询多早之前的日志，单位：小时，应该传递正值，表示`多少小时前开始`")
     private Integer startHoursAgo;
 
     /**
@@ -46,6 +51,7 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
      */
+    @JsonPropertyDescription("查询到多早之前的日志，单位：小时，应该传递正值，表示`多少小时前结束`")
     private Integer endHoursAgo;
 
 }

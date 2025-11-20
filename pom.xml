@@ -45,7 +45,7 @@
         <spring-boot.version>3.4.8</spring-boot.version>
         <spring-ai.version>1.0.1</spring-ai.version>
 
-        <spring-ai-alibaba.version>1.0.0.4</spring-ai-alibaba.version>
+        <spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 
         <jtoon.version>0.1.2</jtoon.version>
     </properties>
@@ -97,6 +97,11 @@
             </dependency>
 
             <!-- Model Provider -->
+            <dependency>
+                <groupId>com.alibaba.cloud.ai</groupId>
+                <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
+                <version>${spring-ai-alibaba.version}</version>
+            </dependency>
 
         </dependencies>
     </dependencyManagement>

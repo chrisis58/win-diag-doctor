@@ -1,11 +1,12 @@
 package cn.teacy.wdd.common.enums;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
 
 /**
  * Windows 日志等级枚举
  *
  */
+@Getter
 public enum LogLevel {
 
     CRITICAL(1),
@@ -18,14 +19,6 @@ public enum LogLevel {
 
     LogLevel(int value) {
         this.value = value;
-    }
-
-    /**
-     * 序列化时使用 int 值，而不是 "CRITICAL", "ERROR"。
-     */
-    @JsonValue
-    public int getValue() {
-        return value;
     }
 
 }
