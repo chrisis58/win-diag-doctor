@@ -18,6 +18,7 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static cn.teacy.wdd.common.constants.ServiceConstants.WS_PROBE_ENDPOINT;
 
@@ -25,6 +26,8 @@ import static cn.teacy.wdd.common.constants.ServiceConstants.WS_PROBE_ENDPOINT;
 @Component
 @RequiredArgsConstructor
 public class ProbeWsClient implements WebSocket.Listener {
+
+    private static final int MAX_RETRY_ATTEMPTS = 5;
 
     private final IProbeProperties properties;
     private final HttpClient httpClient;
@@ -34,7 +37,7 @@ public class ProbeWsClient implements WebSocket.Listener {
 
     private WebSocket webSocket;
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-    private boolean isReconnecting = false;
+    private final AtomicInteger retryCount = new AtomicInteger(0);
     private ScheduledFuture<?> heartbeatTask;
 
     public void connect() {
@@ -53,7 +56,7 @@ public class ProbeWsClient implements WebSocket.Listener {
                     .buildAsync(URI.create(wsUrl), this)
                     .thenAccept(ws -> {
                         this.webSocket = ws;
-                        this.isReconnecting = false;
+                        this.retryCount.set(0);
                     })
                     .exceptionally(ex -> {
                         log.error("Fail to acquire WebSocket connect: {}", ex.getMessage());
@@ -155,11 +158,20 @@ public class ProbeWsClient implements WebSocket.Listener {
     }
 
     private void scheduleReconnect() {
-        if (isReconnecting) return;
-        isReconnecting = true;
+        int currentAttempt = retryCount.incrementAndGet();
+        if (currentAttempt > MAX_RETRY_ATTEMPTS) {
+            log.error("已达到最大重试次数 ({})，停止自动重连。请检查网络配置或重启探针。", MAX_RETRY_ATTEMPTS);
+            log.info("当前配置信息: {}", properties.toString());
+            System.exit(1);
+            return;
+        }
 
-        log.info("Retry connecting after 5s...");
-        scheduler.schedule(this::connect, 5, TimeUnit.SECONDS);
+        // 按照指数退避算法计算延迟时间（秒）
+        // 如果后续重试次数增加，可以考虑设置一个上限
+        long delay = 5 * (long) Math.pow(2, currentAttempt - 1);
+
+        log.info("Retry connecting after {}s...", delay);
+        scheduler.schedule(this::connect, delay, TimeUnit.SECONDS);
     }
 
     private void startHeartbeat() {
