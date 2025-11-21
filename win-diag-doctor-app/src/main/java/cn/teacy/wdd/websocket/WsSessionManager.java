@@ -1,5 +1,6 @@
 package cn.teacy.wdd.websocket;
 
+import cn.teacy.wdd.exception.ProbeNotConnectedException;
 import cn.teacy.wdd.protocol.WsMessage;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Slf4j
 @Service
@@ -40,9 +42,14 @@ public class WsSessionManager {
         }
     }
 
-    public <P extends WsMessagePayload> void send(String probeId, WsMessage<P> wsMessage) {
+    public <P extends WsMessagePayload> void send(String probeId, WsMessage<P> wsMessage) throws ProbeNotConnectedException {
         WebSocketSession session = probeSessions.get(probeId);
-        if (session != null && session.isOpen()) {
+
+        if (Objects.isNull(session)) {
+            throw new ProbeNotConnectedException("Probe with ID " + probeId + " is not connected.");
+        }
+
+        if (session.isOpen()) {
             try {
                 String messageText = objectMapper.writeValueAsString(wsMessage);
                 session.sendMessage(new org.springframework.web.socket.TextMessage(messageText));
