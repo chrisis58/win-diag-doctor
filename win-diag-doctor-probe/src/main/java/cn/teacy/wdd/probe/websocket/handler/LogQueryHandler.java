@@ -6,10 +6,12 @@ import cn.teacy.wdd.common.enums.ExecutionResultEndpoint;
 import cn.teacy.wdd.probe.reader.IWinEventLogCleaner;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.shipper.IProbeShipper;
+import cn.teacy.wdd.probe.websocket.ProbeWsClient;
 import cn.teacy.wdd.protocol.IWsProtocolHandler;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocolHandler;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.protocol.event.TaskStatusUpdate;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -24,10 +26,13 @@ public class LogQueryHandler implements IWsProtocolHandler {
     private final IWinEventLogReader reader;
     private final IWinEventLogCleaner cleaner;
 
+    private final ProbeWsClient wsClient;
+
     @Override
     public void handle(String taskId, WsMessagePayload payload) {
 
         log.info("received log query request, taskId: {}", taskId);
+        wsClient.send(TaskStatusUpdate.ack(taskId));
 
         if (payload instanceof LogQueryRequest request) {
 
@@ -39,6 +44,7 @@ public class LogQueryHandler implements IWsProtocolHandler {
                 boolean success = shipper.ship(ExecutionResultEndpoint.LogQuery, TaskExecutionResult.success(taskId, handled));
 
                 if (!success) {
+                    wsClient.send(TaskStatusUpdate.fail(taskId, "Failed to ship log query result"));
                     log.error("failed to ship log query result, taskId: {}", taskId);
                 }
 

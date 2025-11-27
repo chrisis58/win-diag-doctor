@@ -81,6 +81,19 @@ public class ProbeWsClient implements WebSocket.Listener {
         }
     }
 
+    public void send(WsMessagePayload payload) {
+        try {
+            WsMessage<?> wsMessage = new WsMessage<>(payload);
+
+            this.send(objectMapper.writeValueAsString(wsMessage));
+            log.debug("WsMessage sent, mid: {}", wsMessage.getMid());
+        } catch (JsonProcessingException e) {
+            log.error("Fail to serialize heartbeat: ", e);
+        } catch (Exception e) {
+            log.error("Error occur during sending heartbeat", e);
+        }
+    }
+
     @Override
     public void onOpen(WebSocket webSocket) {
         WebSocket.Listener.super.onOpen(webSocket);
