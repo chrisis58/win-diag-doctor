@@ -80,56 +80,139 @@
                     </execution>
                 </executions>
             </plugin>
-
-            <plugin>
-                <groupId>com.akathist.maven.plugins.launch4j</groupId>
-                <artifactId>launch4j-maven-plugin</artifactId>
-                <version>2.5.0</version>
-                <executions>
-                    <execution>
-                        <id>l4j-clui</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>launch4j</goal>
-                        </goals>
-                        <configuration>
-                            <headerType>console</headerType>
-
-                            <outfile>target/WddProbe.exe</outfile>
-
-                            <jar>target/${project.artifactId}-${project.version}.jar</jar>
-
-                            <errTitle>WddProbe Error</errTitle>
-
-                            <classPath>
-                                <mainClass>cn.teacy.wdd.probe.ProbeMainApplication</mainClass>
-                                <addDependencies>false</addDependencies>
-                                <preCp>anything</preCp>
-                            </classPath>
-
-                            <jre>
-                                <minVersion>17</minVersion>
-                                <runtimeBits>64</runtimeBits>
-                                <!-- 目前要求用户自行安装 JRE -->
-                                <path>%JAVA_HOME%</path>
-                            </jre>
-
-                            <versionInfo>
-                                <fileVersion>1.0.0.0</fileVersion>
-                                <txtFileVersion>${revision}</txtFileVersion>
-                                <fileDescription>Windows Diagnostic Doctor Probe</fileDescription>
-                                <copyright>Teacy</copyright>
-                                <productVersion>1.0.0.0</productVersion>
-                                <txtProductVersion>${revision}</txtProductVersion>
-                                <productName>WddProbe</productName>
-                                <internalName>WddProbe</internalName>
-                                <originalFilename>WddProbe.exe</originalFilename>
-                            </versionInfo>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>bundle-exe</id>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <version>1.9.0</version>
+                        <executions>
+                            <execution>
+                                <id>download-windows-jre</id>
+                                <phase>generate-resources</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://api.adoptium.net/v3/binary/latest/17/ga/windows/x64/jre/hotspot/normal/eclipse</url>
+
+                                    <outputFileName>windows-jre.zip</outputFileName>
+
+                                    <unpack>true</unpack>
+                                    <outputDirectory>${project.build.directory}/temp-jre</outputDirectory>
+
+                                    <cacheDirectory>${project.build.directory}/download-cache</cacheDirectory>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>flatten-jre</id>
+                                <phase>process-resources</phase>
+                                <goals><goal>run</goal></goals>
+                                <configuration>
+                                    <target>
+                                        <mkdir dir="${project.build.directory}/jre"/>
+
+                                        <move todir="${project.build.directory}/jre">
+                                            <fileset dir="${project.build.directory}/temp-jre">
+                                                <include name="**/*"/>
+                                            </fileset>
+                                            <cutdirsmapper dirs="1"/>
+                                        </move>
+
+                                        <delete dir="${project.build.directory}/temp-jre"/>
+                                    </target>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                        <artifactId>launch4j-maven-plugin</artifactId>
+                        <version>2.5.0</version>
+                        <executions>
+                            <execution>
+                                <id>l4j-clui</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>launch4j</goal>
+                                </goals>
+                                <configuration>
+                                    <headerType>console</headerType>
+
+                                    <outfile>target/WddProbe.exe</outfile>
+
+                                    <jar>target/${project.artifactId}-${project.version}.jar</jar>
+
+                                    <errTitle>WddProbe Error</errTitle>
+
+                                    <classPath>
+                                        <mainClass>cn.teacy.wdd.probe.ProbeMainApplication</mainClass>
+                                        <addDependencies>false</addDependencies>
+                                        <preCp>anything</preCp>
+                                    </classPath>
+
+                                    <jre>
+                                        <minVersion>17</minVersion>
+                                        <path>jre</path>
+                                        <runtimeBits>64</runtimeBits>
+                                        <bundledJre64Bit>true</bundledJre64Bit>
+                                    </jre>
+
+                                    <versionInfo>
+                                        <fileVersion>1.0.0.0</fileVersion>
+                                        <txtFileVersion>${revision}</txtFileVersion>
+                                        <fileDescription>Windows Diagnostic Doctor Probe</fileDescription>
+                                        <copyright>Teacy</copyright>
+                                        <productVersion>1.0.0.0</productVersion>
+                                        <txtProductVersion>${revision}</txtProductVersion>
+                                        <productName>WddProbe</productName>
+                                        <internalName>WddProbe</internalName>
+                                        <originalFilename>WddProbe.exe</originalFilename>
+                                    </versionInfo>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <artifactId>maven-assembly-plugin</artifactId>
+                        <configuration>
+                            <finalName>probe</finalName>
+
+                            <appendAssemblyId>true</appendAssemblyId>
+
+                            <descriptors>
+                                <descriptor>src/assembly/assembly-full.xml</descriptor>
+                                <descriptor>src/assembly/assembly-lite.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>make-assembly</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>single</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 
 </project>
