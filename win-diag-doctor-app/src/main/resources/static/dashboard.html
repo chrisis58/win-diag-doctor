@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>WinDiag Doctor - Monitor Center</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        .card {
+            background: white; padding: 20px; border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-5px); border: 2px solid #1890ff; }
+        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
+        .online { background-color: #52c41a; }
+        .offline { background-color: #f5222d; }
+        h3 { margin: 0 0 10px 0; }
+        .id-text { color: #888; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+<h1>已连接的探针 (Connected Probes)</h1>
+<div id="probe-list" class="grid">
+    <div style="text-align: center; color: #999;">加载中...</div>
+</div>
+
+<script>
+    fetch('/api/probe/list')
+        .then(res => res.json())
+        .then(data => {
+            const container = document.getElementById('probe-list');
+            container.innerHTML = '';
+
+            if (data.length === 0) {
+                container.innerHTML = '<div>暂无探针连接，请先下载并运行探针。</div>';
+                return;
+            }
+
+            data.forEach(probe => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                        <h3>
+                            <span class="status ${probe.status === 'ONLINE' ? 'online' : 'offline'}"></span>
+                            ${probe.hostname}
+                        </h3>
+                        <div class="id-text">ID: ${probe.id}</div>
+                    `;
+
+                card.onclick = () => {
+                    enterChat(probe.id, probe.hostname);
+                };
+
+                container.appendChild(card);
+            });
+        });
+
+    function enterChat(id, hostname) {
+        // TODO: 携带探针信息进入聊天界面
+    }
+</script>
+</body>
+</html>

@@ -6,11 +6,13 @@ import cn.teacy.wdd.protocol.WsProtocolHandlerRegistry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.util.UUID;
 
 @Configuration
-public class GeneralConfig {
+public class GeneralConfig implements WebMvcConfigurer {
 
     @Bean
     public TaskIdGenerator taskIdGenerator() {
@@ -25,6 +27,11 @@ public class GeneralConfig {
     @Bean
     public WsProtocolHandlerRegistry wsProtocolHandlerRegistry(WsMessageMapper wsMessageMapper) {
         return new WsProtocolHandlerRegistry(wsMessageMapper, "cn.teacy.wdd.websocket.handler");
+    }
+
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/").setViewName("redirect:/dashboard.html");
     }
 
 }

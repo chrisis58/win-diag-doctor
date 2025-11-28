@@ -2,6 +2,7 @@ package cn.teacy.wdd.probe.websocket;
 
 import cn.teacy.wdd.common.enums.ExecuteOrder;
 import cn.teacy.wdd.probe.properties.IProbeProperties;
+import cn.teacy.wdd.probe.utils.HostnameUtil;
 import cn.teacy.wdd.protocol.*;
 import cn.teacy.wdd.protocol.event.ProbeHeartbeat;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -42,10 +43,11 @@ public class ProbeWsClient implements WebSocket.Listener {
 
     public void connect() {
         try {
-            String wsUrl = String.format("%s%s?probeId=%s",
+            String wsUrl = String.format("%s%s?probeId=%s&hostname=%s",
                     properties.getWsServerHost(),
                     WS_PROBE_ENDPOINT,
-                    properties.getProbeId()
+                    properties.getProbeId(),
+                    HostnameUtil.getHostname()
             );
             log.info("Connecting to WebSocket: {}", wsUrl);
 

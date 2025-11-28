@@ -5,5 +5,17 @@ spring:
   config:
     name: win-diag-doctor
 
+  security:
+    user:
+      name: ${WDD_USER_NAME:admin}
+      password: ${WDD_USER_PASSWORD:admin}
+      roles: ADMIN
+
+wdd:
+  probe:
+    template-path: data/probe-templates
+    connect-key: ${WDD_PROBE_CONNECT_KEY:default_connect_key}
+
 server:
   port: 8093
+  forward-headers-strategy: native

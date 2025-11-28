@@ -1,9 +1,11 @@
 package cn.teacy.wdd.config.interceptor;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -14,22 +16,27 @@ import java.util.Objects;
 @Component
 public class ProbeHandshakeInterceptor implements HandshakeInterceptor {
 
+    @Value("${wdd.probe.connect-key}")
+    private String probeConnectKey;
+
     @Override
     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response, @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) throws Exception {
-        String probeId = UriComponentsBuilder.fromUri(request.getURI())
-                .build()
-                .getQueryParams()
-                .getFirst("probeId");
-
-        if (Objects.isNull(probeId) || probeId.isEmpty()) {
-            return false;
-        }
 
         String authHeader = request.getHeaders().getFirst("Authorization");
 
-        // TODO: 验证 probeId 和 authHeader 的合法性
+        if (Objects.isNull(authHeader) || !authHeader.equals("Bearer " + probeConnectKey)) {
+            return false;
+        }
+
+        MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUri(request.getURI())
+                .build()
+                .getQueryParams();
+
+        String probeId = Objects.requireNonNull(queryParams.getFirst("probeId"));
+        String hostname = queryParams.getFirst("hostname");
 
         attributes.put("probeId", probeId);
+        attributes.put("hostname", hostname != null ? hostname : "Unknown-Host-" + probeId.substring(0, 8));
         return true;
 
     }

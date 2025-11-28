@@ -51,9 +51,10 @@ public class ProbeWsHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String probeId = (String) session.getAttributes().get("probeId");
+        String hostname = (String) session.getAttributes().get("hostname");
 
         if (probeId != null) {
-            sessionManager.register(probeId, session);
+            sessionManager.register(probeId, hostname, session);
         } else {
             try { session.close(); } catch (Exception ignored) {}
         }
