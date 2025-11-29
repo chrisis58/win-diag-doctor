@@ -19,6 +19,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WS_PROBE_ENDPOINT).permitAll()
+                        .requestMatchers("/api/tasks/**").permitAll() // allow task result reporting API
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .anyRequest().authenticated()
                 )
