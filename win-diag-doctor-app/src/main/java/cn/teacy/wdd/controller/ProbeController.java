@@ -5,6 +5,7 @@ import cn.teacy.wdd.dto.ProbeVo;
 import cn.teacy.wdd.websocket.WsSessionManager;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -63,12 +64,15 @@ public class ProbeController {
 
         String wsUrl = deriveWebSocketUrl(baseUrl);
 
+        String probeId = UUID.randomUUID().toString();
+        String probeSecret = DigestUtils.md5Hex(probeConnectKey + probeId);
+
         // 准备 probe.properties 内容
         Properties props = new Properties();
         props.setProperty(ProbeConstants.ConfigKeys.SERVER_URL, baseUrl);
         props.setProperty(ProbeConstants.ConfigKeys.WS_SERVER_URL, wsUrl);
-        props.setProperty(ProbeConstants.ConfigKeys.PROBE_SECRET, probeConnectKey);
-        props.setProperty(ProbeConstants.ConfigKeys.PROBE_ID, UUID.randomUUID().toString());
+        props.setProperty(ProbeConstants.ConfigKeys.PROBE_SECRET, probeSecret);
+        props.setProperty(ProbeConstants.ConfigKeys.PROBE_ID, probeId);
 
         ByteArrayOutputStream propsStream = new ByteArrayOutputStream();
         // 使用 store 存储，并补充注释

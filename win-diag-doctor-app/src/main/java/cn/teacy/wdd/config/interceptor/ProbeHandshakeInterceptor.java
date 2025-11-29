@@ -1,5 +1,6 @@
 package cn.teacy.wdd.config.interceptor;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -23,16 +24,15 @@ public class ProbeHandshakeInterceptor implements HandshakeInterceptor {
     public boolean beforeHandshake(@NonNull ServerHttpRequest request, @NonNull ServerHttpResponse response, @NonNull WebSocketHandler wsHandler, @NonNull Map<String, Object> attributes) throws Exception {
 
         String authHeader = request.getHeaders().getFirst("Authorization");
-
-        if (Objects.isNull(authHeader) || !authHeader.equals("Bearer " + probeConnectKey)) {
-            return false;
-        }
-
         MultiValueMap<String, String> queryParams = UriComponentsBuilder.fromUri(request.getURI())
                 .build()
                 .getQueryParams();
-
         String probeId = Objects.requireNonNull(queryParams.getFirst("probeId"));
+
+        if (Objects.isNull(authHeader) || !authHeader.equals("Bearer " + DigestUtils.md5Hex(probeConnectKey + probeId))) {
+            return false;
+        }
+
         String hostname = queryParams.getFirst("hostname");
 
         attributes.put("probeId", probeId);
