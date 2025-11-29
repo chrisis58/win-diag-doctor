@@ -1,7 +1,7 @@
 package cn.teacy.wdd.service;
 
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
-import cn.teacy.wdd.common.support.TaskHandle;
+import cn.teacy.wdd.support.TaskHandle;
 import cn.teacy.wdd.protocol.WsMessage;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.websocket.WsSessionManager;

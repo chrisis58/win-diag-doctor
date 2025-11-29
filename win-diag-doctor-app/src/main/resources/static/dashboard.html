@@ -56,7 +56,22 @@
         });
 
     function enterChat(id, hostname) {
-        // TODO: 携带探针信息进入聊天界面
+        if (!id) {
+            alert("探针 ID 无效，无法进入诊断。");
+            return;
+        }
+
+        const threadId = (window.crypto && window.crypto.randomUUID)
+            ? window.crypto.randomUUID()
+            : 'thread-' + Math.random().toString(36).substring(2, 15);
+
+        const baseUrl = '/chatui/index.html';
+        const params = new URLSearchParams({
+            probeId: id,
+            threadId: threadId,
+        });
+
+        window.location.href = `${baseUrl}?${params.toString()}`;
     }
 </script>
 </body>

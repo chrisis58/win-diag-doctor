@@ -1,6 +1,6 @@
 package cn.teacy.wdd.service;
 
-import cn.teacy.wdd.common.support.TaskHandle;
+import cn.teacy.wdd.support.TaskHandle;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;

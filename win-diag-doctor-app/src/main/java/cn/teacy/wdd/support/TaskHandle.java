@@ -1,4 +1,4 @@
-package cn.teacy.wdd.common.support;
+package cn.teacy.wdd.support;
 
 import lombok.Getter;
 
