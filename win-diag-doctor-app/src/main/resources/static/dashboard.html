@@ -2,58 +2,209 @@
 <html lang="zh">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WinDiag Doctor - Monitor Center</title>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        h1 { margin: 0; font-size: 1.5em; color: #1f1f1f; }
+
+        .action-group { display: flex; gap: 10px; }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn:active { transform: translateY(0); }
+
+        .btn-primary { background-color: #1890ff; color: white; }
+        .btn-default { background-color: #f0f0f0; color: #333; border: 1px solid #d9d9d9; }
+        .btn-outline { background-color: transparent; border: 1px solid #1890ff; color: #1890ff; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+
         .card {
             background: white; padding: 20px; border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1); cursor: pointer; transition: transform 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer;
+            transition: all 0.3s; border: 1px solid transparent;
         }
-        .card:hover { transform: translateY(-5px); border: 2px solid #1890ff; }
-        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; }
-        .online { background-color: #52c41a; }
+        .card:hover { transform: translateY(-5px); border-color: #1890ff; box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2); }
+
+        .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .card h3 { margin: 0; font-size: 1.1em; }
+
+        .status { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; }
+        .online { background-color: #52c41a; box-shadow: 0 0 4px #52c41a; }
         .offline { background-color: #f5222d; }
-        h3 { margin: 0 0 10px 0; }
-        .id-text { color: #888; font-size: 0.8em; }
+
+        .info-row { font-size: 0.85em; color: #666; margin-top: 5px; }
+        .tag { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+
+        .empty-state {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #eee;
+        }
+
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            background-color: #ffffff;
+            min-width: 180px;
+            box-shadow: 0 8px 16px 0 rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .dropdown-content a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            font-size: 14px;
+            transition: background-color 0.2s;
+            text-align: left;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+            color: #1890ff;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        .dropdown .btn-main {
+            border-bottom-left-radius: 0;
+            border-bottom-right-radius: 0;
+        }
     </style>
 </head>
 <body>
-<h1>已连接的探针 (Connected Probes)</h1>
+
+<div class="header-bar">
+    <h1>🔍 已连接的探针 (Connected Probes)</h1>
+    <div class="action-group">
+        <button class="btn btn-default" onclick="loadProbes()">
+            🔄 刷新列表
+        </button>
+
+        <div class="dropdown">
+            <button class="btn btn-primary">
+                ⬇️ 下载探针 (Download) ▼
+            </button>
+            <div class="dropdown-content">
+                <a href="/api/probe/download?type=full" title="包含 JRE，开箱即用 (推荐)">
+                    📦 完整版 (Full)
+                </a>
+                <a href="/api/probe/download?type=lite" title="仅 Jar 包，需本地有 Java环境">
+                    🪶 精简版 (Lite)
+                </a>
+                <a href="/api/probe/download/properties" title="仅下载配置文件 (用于手动部署)">
+                    ⚙️ 仅配置 (Config Only)
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="probe-list" class="grid">
-    <div style="text-align: center; color: #999;">加载中...</div>
 </div>
 
 <script>
-    fetch('/api/probe/list')
-        .then(res => res.json())
-        .then(data => {
-            const container = document.getElementById('probe-list');
-            container.innerHTML = '';
+    document.addEventListener('DOMContentLoaded', loadProbes);
 
-            if (data.length === 0) {
-                container.innerHTML = '<div>暂无探针连接，请先下载并运行探针。</div>';
-                return;
-            }
+    function loadProbes() {
+        const container = document.getElementById('probe-list');
 
-            data.forEach(probe => {
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                        <h3>
-                            <span class="status ${probe.status === 'ONLINE' ? 'online' : 'offline'}"></span>
-                            ${probe.hostname}
-                        </h3>
-                        <div class="id-text">ID: ${probe.id}</div>
+        if (container.children.length === 0) {
+            container.innerHTML = '<div class="empty-state">正在获取探针状态...</div>';
+        }
+
+        fetch('/api/probe/list')
+            .then(res => {
+                if (!res.ok) throw new Error("API Request Failed");
+                return res.json();
+            })
+            .then(data => {
+                container.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>暂无探针连接</h3>
+                            <p>请点击右上角下载探针，并在目标机器上运行。</p>
+                        </div>`;
+                    return;
+                }
+
+                data.forEach(probe => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    const statusClass = (probe.status === 'ONLINE' || probe.status === 'CONNECTED') ? 'online' : 'offline';
+                    const statusText = statusClass === 'online' ? '在线' : '离线';
+
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <h3>
+                                <span class="status ${statusClass}"></span>
+                                ${probe.hostname || 'Unknown Host'}
+                            </h3>
+                            <span style="font-size: 0.8em; color: ${statusClass === 'online' ? '#52c41a' : '#f5222d'}">
+                                ${statusText}
+                            </span>
+                        </div>
+                        <div class="info-row">ID: <span class="tag">${probe.id}</span></div>
+                        <div class="info-row" style="margin-top: 10px; text-align: right; color: #1890ff; font-size: 0.9em;">
+                            点击进入诊断 &rarr;
+                        </div>
                     `;
 
-                card.onclick = () => {
-                    enterChat(probe.id, probe.hostname);
-                };
+                    card.onclick = () => {
+                        enterChat(probe.id, probe.hostname);
+                    };
 
-                container.appendChild(card);
+                    container.appendChild(card);
+                });
+            })
+            .catch(err => {
+                console.error(err);
+                container.innerHTML = `<div class="empty-state" style="color: red;">获取列表失败: ${err.message}</div>`;
             });
-        });
+    }
 
     function enterChat(id, hostname) {
         if (!id) {
