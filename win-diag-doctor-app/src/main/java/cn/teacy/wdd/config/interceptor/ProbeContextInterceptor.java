@@ -18,8 +18,13 @@ public class ProbeContextInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull Object handler) throws Exception {
 
-        // 先尝试从 Header 获取
-        String probeId = request.getHeader("X-Probe-ID");
+        // 尝试从请求中提取 Probe ID
+        String probeId = request.getParameter("probeId");
+
+        // 尝试从 Header 获取
+        if (probeId == null || probeId.isBlank()) {
+            probeId = request.getHeader("X-Probe-ID");
+        }
 
         // 从 Referer 获取
         if (probeId == null || probeId.isBlank()) {
