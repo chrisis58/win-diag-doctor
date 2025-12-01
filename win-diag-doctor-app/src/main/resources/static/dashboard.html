@@ -212,14 +212,9 @@
             return;
         }
 
-        const threadId = (window.crypto && window.crypto.randomUUID)
-            ? window.crypto.randomUUID()
-            : 'thread-' + Math.random().toString(36).substring(2, 15);
-
         const baseUrl = '/chatui/index.html';
         const params = new URLSearchParams({
             probeId: id,
-            threadId: threadId,
         });
 
         window.location.href = `${baseUrl}?${params.toString()}`;
