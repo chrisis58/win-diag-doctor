@@ -51,6 +51,7 @@ public class GeneralConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(@NonNull InterceptorRegistry registry) {
         registry.addInterceptor(new ProbeContextInterceptor(probeContext))
+                .addPathPatterns("/chatui/index.html")
                 .addPathPatterns("/run_sse");
     }
 
