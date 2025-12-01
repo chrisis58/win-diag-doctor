@@ -4,6 +4,8 @@ import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
 import com.alibaba.cloud.ai.graph.agent.ReactAgent;
+import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
+import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
@@ -88,6 +90,8 @@ public class ChatClientConfig {
                 """)
                 .chatClient(chatClient)
                 .tools(diagnosticToolCallbacks)
+                .interceptors(new ToolErrorInterceptor())
+                .saver(new MemorySaver())
                 .name("wdd-agent")
                 .build();
 
