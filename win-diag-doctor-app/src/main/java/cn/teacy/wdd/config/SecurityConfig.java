@@ -20,11 +20,21 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(WS_PROBE_ENDPOINT).permitAll()
                         .requestMatchers("/api/tasks/**").permitAll() // allow task result reporting API
-                        .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
+                        .requestMatchers(
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/favicon.ico",
+                                "/chatui/_next/static/**"
+                        ).permitAll()
+                        .requestMatchers("/login").permitAll()
                         .anyRequest().authenticated()
                 )
-                .formLogin(withDefaults())
-                .httpBasic(withDefaults());
+                .formLogin(form -> form
+                        .permitAll()
+                        // 登录后强制跳到 dashboard
+                        .defaultSuccessUrl("/dashboard.html", true)
+                ).httpBasic(withDefaults());
 
         return http.build();
     }
