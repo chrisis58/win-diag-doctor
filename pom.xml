@@ -47,7 +47,7 @@
 
         <spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 
-        <jtoon.version>1.0.6</jtoon.version>
+        <jtoon.version>0.1.2</jtoon.version>
     </properties>
 
     <dependencyManagement>
@@ -70,6 +70,17 @@
                 <scope>import</scope>
             </dependency>
 
+            <!--
+                Spring AI Alibaba
+
+                NOTE: Since spring-ai-alibaba is not yet officially released,
+                      you should install it to your local Maven repository manually.
+
+                >>> git clone https://github.com/alibaba/spring-ai-alibaba.git
+                >>> cd spring-ai-alibaba
+                >>> git checkout tags/v1.0.0.4
+                >>> mvn clean install -DskipTests
+            -->
             <dependency>
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-bom</artifactId>
@@ -80,7 +91,7 @@
 
             <!-- Tools -->
             <dependency>
-                <groupId>dev.toonformat</groupId>
+                <groupId>com.felipestanzani</groupId>
                 <artifactId>jtoon</artifactId>
                 <version>${jtoon.version}</version>
             </dependency>

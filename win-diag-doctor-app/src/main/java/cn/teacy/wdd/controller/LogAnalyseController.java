@@ -6,9 +6,9 @@ import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.protocol.WsMessageContext;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.service.LogQueryService;
-import dev.toonformat.jtoon.Delimiter;
-import dev.toonformat.jtoon.EncodeOptions;
-import dev.toonformat.jtoon.JToon;
+import com.felipestanzani.jtoon.Delimiter;
+import com.felipestanzani.jtoon.EncodeOptions;
+import com.felipestanzani.jtoon.JToon;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -28,7 +28,7 @@ public class LogAnalyseController {
 
     @PostMapping("/resolve")
     public String analyse(@RequestBody WsMessageContext queryContext) {
-        String toonEncoded = JToon.encode(queryContext, new EncodeOptions(2, Delimiter.PIPE, true, false, Integer.MAX_VALUE));
+        String toonEncoded = JToon.encode(queryContext, new EncodeOptions(2, Delimiter.PIPE, true));
 
         log.debug(toonEncoded);
 
