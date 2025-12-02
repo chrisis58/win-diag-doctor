@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  windiagdoctor:
+    build: .
+    image: win-diag-doctor:latest
+    container_name: wdd-server
+    ports:
+      - "8093:8093"
+    environment:
+      - AI_DASHSCOPE_API_KEY=${AI_DASHSCOPE_API_KEY}
+
+      # 可选：自定义用户名密码
+      # - WDD_USER_NAME=admin
+      # - WDD_USER_PASSWORD=admin
+
+      # 可选：自定义探针连接密钥哈希盐值
+      # - WDD_PROBE_CONNECT_KEY=your-secret-key
+    restart: unless-stopped
