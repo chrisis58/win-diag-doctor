@@ -1,12 +1,15 @@
 spring:
   ai:
     dashscope:
+      # 参考官方文档获取 API Key
+      # https://help.aliyun.com/zh/model-studio/first-api-call-to-qwen?spm=a2c4g.11186623.help-menu-2400256.d_0_0_1.30237dc5FLsnId
       api-key: ${AI_DASHSCOPE_API_KEY}
   config:
     name: win-diag-doctor
 
   security:
     user:
+      # 默认管理员账号密码，可通过环境变量覆盖
       name: ${WDD_USER_NAME:admin}
       password: ${WDD_USER_PASSWORD:admin}
       roles: ADMIN
@@ -14,6 +17,7 @@ spring:
 wdd:
   probe:
     template-path: data/probe-templates
+    # 默认连接密钥，用作哈希盐值，可通过环境变量覆盖
     connect-key: ${WDD_PROBE_CONNECT_KEY:default_connect_key}
 
 server:
