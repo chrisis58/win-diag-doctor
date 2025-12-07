@@ -40,49 +40,29 @@
 - **按需采集**：探针仅在收到 AI 指令时执行特定操作，不会在后台随意上传用户数据。
 - **数据脱敏（待开发）**：探针在向服务器发送数据前，会先将数据中的敏感数据进行模糊处理。
 
-## 🛠️ 使用方法
+## ⚡ 快速开始
 
 ### 前置要求
 
-- JDK 17+
+- Docker, Docker Compose
 - 阿里云 DashScope API Key (用于驱动 AI)
 
 ### 1. 启动服务端 (Server)
 
 1. **配置环境**：修改 `server-app/src/main/resources/application.yml` 或者配置对应的环境变量：
 
-   ```yaml
-   spring:
-     ai:
-       dashscope:
-         # 参考官方文档获取 API Key：
-         # https://help.aliyun.com/zh/model-studio/first-api-call-to-qwen?spm=a2c4g.11186623.help-menu-2400256.d_0_0_1.30237dc5FLsnId
-         api-key: ${AI_DASHSCOPE_API_KEY}
-     config:
-       name: win-diag-doctor
+   ```bash
+   # 1. 获取源码
+   git clone https://github.com/chrisis58/win-diag-doctor.git
+   cd win-diag-doctor
    
-     security:
-       user:
-         # 默认管理员账号密码，可通过环境变量覆盖
-         name: ${WDD_USER_NAME:admin}
-         password: ${WDD_USER_PASSWORD:admin}
-         roles: ADMIN
+   # 2. 修改配置: 请按照指引修改 .env
+   cp .env.example .env
    
-   wdd:
-     probe:
-       template-path: data/probe-templates
-       # 默认连接密钥，用作哈希盐值，可通过环境变量覆盖
-       connect-key: ${WDD_PROBE_CONNECT_KEY:default_connect_key}
-   
-   server:
-     port: 8093
-     forward-headers-strategy: native
+   # 3. 启动 (首次运行需要构建)
+   docker compose up -d
    ```
-
-2. （如果以开发模式启动，此步可以省略）打包 Probe 客户端：`mvn clean compile package -Pbundle-exe`
-
-3. **运行**：启动 `WinDiagDoctorMainApplication`。
-
+   
 4. 访问 Dashboard：打开浏览器访问 http://localhost:8093/dashboard.html。
 
 ### 2. 部署探针 (Probe)
@@ -90,7 +70,7 @@
 1. 在 Dashboard 页面中，点击右上角的 **“下载探针”** 按钮。
    - *推荐选择“完整版 (Full)”以包含必要的运行环境。*
 2. 将下载的 ZIP 包解压到目标 Windows 机器上。
-3. 双击运行 `WddProbe.exe` (或直接运行 `ProbeMainApplication`)。
+3. 双击运行 `WddProbe.exe`。
 4. 回到 Dashboard 并刷新状态，您应能看到该探针状态变为 **ONLINE**。
 
 ### 3. 开始诊断
