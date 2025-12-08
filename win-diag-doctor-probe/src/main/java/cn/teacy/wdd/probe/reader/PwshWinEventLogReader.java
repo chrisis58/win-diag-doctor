@@ -102,7 +102,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
             }
 
             // PowerShell 在返回单个对象时也会将其包裹在数组中，所以这里始终解析为 List
-            return objectMapper.readValue(json, new TypeReference<List<WinEventLogEntry>>() {});
+            return objectMapper.readValue(json, new TypeReference<>() {});
 
         } catch (Exception e) {
             log.error("读取 Windows 事件日志时发生异常", e);
