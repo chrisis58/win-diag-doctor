@@ -2,6 +2,7 @@ package cn.teacy.wdd.probe.reader;
 
 import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.common.utils.ReUtils;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -148,6 +149,11 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
 
         public EventViewerFilterCommandBuilder logName(String logName) {
             if (logName == null || logName.isEmpty()) {
+                return this;
+            }
+
+            if (!ReUtils.isPlainText(logName)) {
+                log.warn("日志名称包含非法字符，已被忽略: {}", logName);
                 return this;
             }
 
