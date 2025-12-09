@@ -108,7 +108,7 @@
                                     <unpack>true</unpack>
                                     <outputDirectory>${project.build.directory}/temp-jre</outputDirectory>
 
-                                    <cacheDirectory>${project.build.directory}/download-cache</cacheDirectory>
+                                    <cacheDirectory>${project.basedir}/../.cache/downloads</cacheDirectory>
                                 </configuration>
                             </execution>
                         </executions>
