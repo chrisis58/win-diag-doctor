@@ -4,6 +4,7 @@ import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.common.utils.ReUtils;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
     }
 
     @Override
-    public List<WinEventLogEntry> readEventLogs(LogQueryRequest queryRequest) {
+    public LogQueryResponse readEventLogs(LogQueryRequest queryRequest) {
 
         String powerShellCommand = EventViewerFilterCommandBuilder.builder()
                 .logName(queryRequest.getLogName())
@@ -85,30 +86,38 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
             if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
                 process.destroy();
                 log.error("PowerShell 命令执行超时！");
-                return new ArrayList<>();
+                return LogQueryResponse.EMPTY;
             }
 
             // 检查是否有错误
             if (process.exitValue() != 0) {
                 log.error("PowerShell 命令执行失败，退出码: {}", process.exitValue());
                 log.error("错误详情: {}", errorOutput);
-                return new ArrayList<>();
+                return LogQueryResponse.EMPTY;
             }
 
             String json = jsonOutput.toString();
             if (json.isEmpty()) {
                 log.info("未找到匹配的日志条目。");
-                return new ArrayList<>();
+                return LogQueryResponse.EMPTY;
             }
 
             // PowerShell 在返回单个对象时也会将其包裹在数组中，所以这里始终解析为 List
-            return objectMapper.readValue(json, new TypeReference<>() {});
+            List<WinEventLogEntry> entries = objectMapper.readValue(json, new TypeReference<>() {});
+
+            boolean hasMore = entries.size() > queryRequest.getMaxEvents();
+
+            if (hasMore) {
+                entries = entries.subList(0, queryRequest.getMaxEvents());
+            }
+
+            return new LogQueryResponse(entries, hasMore);
 
         } catch (Exception e) {
             log.error("读取 Windows 事件日志时发生异常", e);
             log.error(e.getMessage(), e);
 
-            return new ArrayList<>();
+            return LogQueryResponse.EMPTY;
         }
     }
 
@@ -142,7 +151,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
             if (filterBuilder.length() >= 2) {
                 filterBuilder.setLength(filterBuilder.length() - 2);
             }
-            filterBuilder.append("} -MaxEvents ").append(maxEvents).append(" | ConvertTo-Json");
+            filterBuilder.append("} -MaxEvents ").append(maxEvents + 1).append(" | ConvertTo-Json");
 
             return filterBuilder.toString();
         }

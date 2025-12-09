@@ -2,6 +2,7 @@ package cn.teacy.wdd.probe.reader;
 
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 
 import java.util.List;
 
@@ -17,6 +18,6 @@ public interface IWinEventLogReader {
      * @param queryRequest 日志查询请求对象，包含日志名称和级别等过滤条件
      * @return 事件日志条目列表
      */
-    List<WinEventLogEntry> readEventLogs(LogQueryRequest queryRequest);
+    LogQueryResponse readEventLogs(LogQueryRequest queryRequest);
 
 }

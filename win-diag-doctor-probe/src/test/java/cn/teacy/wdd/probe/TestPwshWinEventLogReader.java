@@ -40,7 +40,7 @@ public class TestPwshWinEventLogReader {
         request.setLevels(List.of(LogLevel.ERROR, LogLevel.CRITICAL));
         request.setMaxEvents(5);
 
-        List<WinEventLogEntry> logs = logReader.readEventLogs(request);
+        List<WinEventLogEntry> logs = logReader.readEventLogs(request).getEntries();
 
         assertNotNull(logs, "日志列表不应为 null");
 
@@ -67,7 +67,7 @@ public class TestPwshWinEventLogReader {
                 .levels(null)
                 .build();
 
-        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest).getEntries();
 
         assertNotNull(logs, "日志列表不应为 null");
 
@@ -90,7 +90,7 @@ public class TestPwshWinEventLogReader {
                 .maxEvents(3)
                 .build();
 
-        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest).getEntries();
 
         assertNotNull(logs, "日志列表不应为 null");
 
@@ -126,7 +126,7 @@ public class TestPwshWinEventLogReader {
                 .endHoursAgo(1) // to 1 hour ago
                 .build();
 
-        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest);
+        List<WinEventLogEntry> logs = logReader.readEventLogs(queryRequest).getEntries();
 
         assertNotNull(logs, "日志列表不应为 null");
 

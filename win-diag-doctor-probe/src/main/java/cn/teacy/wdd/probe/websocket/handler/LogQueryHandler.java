@@ -12,6 +12,7 @@ import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocolHandler;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.protocol.event.TaskStatusUpdate;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,11 +38,12 @@ public class LogQueryHandler implements IWsProtocolHandler {
         if (payload instanceof LogQueryRequest request) {
 
             try {
-                List<WinEventLogEntry> logEntries = reader.readEventLogs(request);
+                LogQueryResponse logQueryResponse = reader.readEventLogs(request);
 
-                List<WinEventLogEntry> handled = cleaner.handle(logEntries);
+                List<WinEventLogEntry> handled = cleaner.handle(logQueryResponse.getEntries());
+                logQueryResponse.setEntries(handled);
 
-                boolean success = shipper.ship(ExecutionResultEndpoint.LogQuery, TaskExecutionResult.success(taskId, handled));
+                boolean success = shipper.ship(ExecutionResultEndpoint.LogQuery, TaskExecutionResult.success(taskId, logQueryResponse));
 
                 if (!success) {
                     wsClient.send(TaskStatusUpdate.fail(taskId, "Failed to ship log query result"));

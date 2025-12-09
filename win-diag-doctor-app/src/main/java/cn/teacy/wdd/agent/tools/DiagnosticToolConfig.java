@@ -1,12 +1,10 @@
 package cn.teacy.wdd.agent.tools;
 
 import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
-import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import cn.teacy.wdd.service.LogQueryService;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import com.felipestanzani.jtoon.Delimiter;
-import com.felipestanzani.jtoon.EncodeOptions;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
@@ -14,11 +12,11 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
 
+import static cn.teacy.wdd.constants.JToonEncodeOption.DEFAULT_OPTIONS;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
 @Configuration
@@ -45,9 +43,9 @@ public class DiagnosticToolConfig {
                             return "ERROR: Probe ID missing in context.";
                         }
 
-                        List<WinEventLogEntry> logs = logQueryService.queryLog(probeId, request);
+                        LogQueryResponse queryResponse = logQueryService.queryLog(probeId, request);
 
-                        return JToon.encode(logs, new EncodeOptions(2, Delimiter.PIPE, true));
+                        return JToon.encode(queryResponse, DEFAULT_OPTIONS);
                     }
                 })
                 .description("""

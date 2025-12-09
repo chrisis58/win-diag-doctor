@@ -1,6 +1,6 @@
 package cn.teacy.wdd.service;
 
-import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import cn.teacy.wdd.support.TaskHandle;
 import cn.teacy.wdd.protocol.WsMessage;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
@@ -22,16 +22,16 @@ public class LogQueryService {
     private static final long ACK_TIMEOUT_SECONDS = 5;
     private static final long QUERY_TIMEOUT_SECONDS = 60;
 
-    private final IPendingTaskRegistry<List<WinEventLogEntry>> pendingTaskRegistry;
+    private final IPendingTaskRegistry<LogQueryResponse> pendingTaskRegistry;
     private final WsSessionManager sessionManager;
 
 
-    public List<WinEventLogEntry> queryLog(String probeId, LogQueryRequest queryRequest) {
+    public LogQueryResponse queryLog(String probeId, LogQueryRequest queryRequest) {
 
         WsMessage<LogQueryRequest> wsMessage = new WsMessage<>(queryRequest);
         String taskId = wsMessage.getTaskId();
 
-        TaskHandle<List<WinEventLogEntry>> handle = pendingTaskRegistry.register(taskId);
+        TaskHandle<LogQueryResponse> handle = pendingTaskRegistry.register(taskId);
 
         try {
             sessionManager.send(probeId, wsMessage);
