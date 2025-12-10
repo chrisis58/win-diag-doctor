@@ -1,5 +1,7 @@
 # 🩺 WinDiagDoctor (WDD)
 
+[![Build Docker Image](https://github.com/chrisis58/win-diag-doctor/actions/workflows/docker-build.yml/badge.svg)](https://github.com/chrisis58/win-diag-doctor/actions/workflows/docker-build.yml)
+
 > **智能 Windows 系统诊断专家 / Intelligent Windows Diagnostic Agent**
 
 > **⚠️ 注意：本项目当前仍处于早期开发阶段。**
@@ -51,21 +53,23 @@
 
 ### 1. 启动服务端 (Server)
 
-1. **配置环境**：修改 `server-app/src/main/resources/application.yml` 或者配置对应的环境变量：
+1. **配置环境**：
 
    ```bash
    # 1. 获取源码
    git clone https://github.com/chrisis58/win-diag-doctor.git
    cd win-diag-doctor
    
-   # 2. 修改配置: 请按照指引修改 .env
+   # 2. 复制模板并修改配置: 请按照指引修改 .env
    cp .env.example .env
    
    # 3. 启动 (首次运行需要构建)
    docker compose up -d
    ```
    
-4. 访问 Dashboard：打开浏览器访问 http://localhost:8093/dashboard.html。
+   > 你也可以在项目 [构建历史](https://github.com/chrisis58/win-diag-doctor/actions/workflows/docker-build.yml) 中下载预构建的镜像。
+   
+4. 访问 Dashboard：打开浏览器访问 http://localhost:8093/dashboard.html
 
 ### 2. 部署探针 (Probe)
 
