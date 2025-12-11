@@ -20,5 +20,17 @@
             <directory>${project.build.directory}/jre</directory>
             <outputDirectory>/jre</outputDirectory>
         </fileSet>
+
+        <fileSet>
+            <directory>${project.basedir}/src/main/scripts</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>*.bat</include>
+                <include>*.cmd</include>
+                <include>*.ps1</include>
+            </includes>
+            <fileMode>0755</fileMode>
+            <lineEnding>crlf</lineEnding>
+        </fileSet>
     </fileSets>
 </assembly>
