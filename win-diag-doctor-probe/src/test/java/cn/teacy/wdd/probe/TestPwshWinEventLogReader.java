@@ -33,6 +33,24 @@ public class TestPwshWinEventLogReader {
 
     @Test
     @EnabledOnOs(OS.WINDOWS)
+    void testReadSecurityLogs() {
+
+        // it requires elevated privileges to read Security logs
+
+        LogQueryRequest request = LogQueryRequest.builder()
+                .maxEvents(3)
+                .logName(LogNames.SECURITY)
+                .levels(List.of(LogLevel.INFORMATION))
+                .build();
+
+        List<WinEventLogEntry> logs = logReader.readEventLogs(request).getEntries();
+
+        logs.forEach(System.out::println);
+
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
     void testReadEventLogs_ShouldReturnValidData() {
 
         LogQueryRequest request = new LogQueryRequest();

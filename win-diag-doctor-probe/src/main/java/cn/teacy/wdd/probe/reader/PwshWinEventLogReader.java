@@ -17,9 +17,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * 使用 PowerShell 读取 Windows 事件日志的实现
@@ -176,9 +177,11 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 return this;
             }
 
-            String levelString = String.join(",",
-                    levels.stream().map(LogLevel::getValue).map(String::valueOf).toArray(String[]::new)
-            );
+            String levelString = levels.stream()
+                    .map(LogLevel::getValue)
+                    .flatMap(Collection::stream)
+                    .map(String::valueOf)
+                    .collect(Collectors.joining(","));
             filterBuilder.append("Level=@(").append(levelString).append("); ");
             return this;
         }

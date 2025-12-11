@@ -2,6 +2,8 @@ package cn.teacy.wdd.common.enums;
 
 import lombok.Getter;
 
+import java.util.Set;
+
 /**
  * Windows 日志等级枚举
  *
@@ -9,15 +11,15 @@ import lombok.Getter;
 @Getter
 public enum LogLevel {
 
-    CRITICAL(1),
-    ERROR(2),
-    WARNING(3),
-    INFORMATION(4),
-    VERBOSE(5);
+    CRITICAL(Set.of(1)),
+    ERROR(Set.of(2)),
+    WARNING(Set.of(3)),
+    INFORMATION(Set.of(0, 4)),
+    VERBOSE(Set.of(5));
 
-    private final int value;
+    private final Set<Integer> value;
 
-    LogLevel(int value) {
+    LogLevel(Set<Integer> value) {
         this.value = value;
     }
 
