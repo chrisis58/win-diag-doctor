@@ -8,8 +8,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserContext {
-    private boolean isAdmin;
-    private boolean isReader;
+    private Boolean isAdmin;
+    private Boolean isReader;
 
     public static UserContext UNKNOWN = new UserContext(false, false);
 }
