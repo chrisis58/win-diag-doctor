@@ -19,18 +19,21 @@ import java.util.List;
 @WsProtocol(identifier = "response:log:query")
 public class LogQueryResponse extends WsMessagePayload {
 
-    /**
-     * 根据查询请求返回的事件日志条目列表
-     */
-    List<WinEventLogEntry> entries;
+    UserContext userContext;
 
     /**
      * 是否有更多日志条目可供查询（相同条件）
      */
     boolean hasMore;
 
-    UserContext userContext;
+    /**
+     * 根据查询请求返回的事件日志条目列表
+     */
+    List<WinEventLogEntry> entries;
 
-    public static final LogQueryResponse EMPTY = new LogQueryResponse(Collections.emptyList(), false, null);
+
+    public static LogQueryResponse empty(UserContext userContext) {
+        return new LogQueryResponse(userContext, false, Collections.emptyList());
+    }
 
 }

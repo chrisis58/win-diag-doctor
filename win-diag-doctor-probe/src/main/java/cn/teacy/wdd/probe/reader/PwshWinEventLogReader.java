@@ -48,7 +48,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
 
             if (result.isEmpty()) {
                 log.info("未找到匹配的日志条目。");
-                return LogQueryResponse.EMPTY;
+                return LogQueryResponse.empty(probeContextProvider.getUserContext());
             }
 
             // PowerShell 在返回单个对象时也会将其包裹在数组中，所以这里始终解析为 List
@@ -60,13 +60,13 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 entries = entries.subList(0, queryRequest.getMaxEvents());
             }
 
-            return new LogQueryResponse(entries, hasMore, probeContextProvider.getUserContext());
+            return new LogQueryResponse(probeContextProvider.getUserContext(), hasMore, entries);
 
         } catch (Exception e) {
             log.error("读取 Windows 事件日志时发生异常", e);
             log.error(e.getMessage(), e);
 
-            return LogQueryResponse.EMPTY;
+            return LogQueryResponse.empty(probeContextProvider.getUserContext());
         }
     }
 
