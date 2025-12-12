@@ -1,5 +1,6 @@
 package cn.teacy.wdd.protocol.response;
 
+import cn.teacy.wdd.common.entity.UserContext;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocol;
@@ -28,6 +29,8 @@ public class LogQueryResponse extends WsMessagePayload {
      */
     boolean hasMore;
 
-    public static final LogQueryResponse EMPTY = new LogQueryResponse(Collections.emptyList(), false);
+    UserContext userContext;
+
+    public static final LogQueryResponse EMPTY = new LogQueryResponse(Collections.emptyList(), false, null);
 
 }

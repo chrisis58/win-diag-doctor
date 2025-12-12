@@ -3,6 +3,8 @@ package cn.teacy.wdd.probe;
 import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.constants.LogNames;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
+import cn.teacy.wdd.probe.component.PowerShellExecutor;
+import cn.teacy.wdd.probe.component.ProbeContextProvider;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.reader.PwshWinEventLogReader;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
@@ -24,11 +26,14 @@ public class TestPwshWinEventLogReader {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final PowerShellExecutor powerShellExecutor = new PowerShellExecutor();
+
     private IWinEventLogReader logReader;
 
     @BeforeEach
     void setUp() {
-        logReader = new PwshWinEventLogReader(objectMapper);
+        ProbeContextProvider probeContextProvider = new ProbeContextProvider(powerShellExecutor, objectMapper);
+        logReader = new PwshWinEventLogReader(objectMapper, powerShellExecutor, probeContextProvider);
     }
 
     @Test

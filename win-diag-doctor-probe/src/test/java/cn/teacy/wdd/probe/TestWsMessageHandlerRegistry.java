@@ -1,6 +1,8 @@
 package cn.teacy.wdd.probe;
 
 import cn.teacy.wdd.common.enums.ExecuteOrder;
+import cn.teacy.wdd.probe.component.PowerShellExecutor;
+import cn.teacy.wdd.probe.component.ProbeContextProvider;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.reader.PwshWinEventLogReader;
 import cn.teacy.wdd.probe.test.handler.TestLogQueryRequestHandler;
@@ -70,6 +72,16 @@ public class TestWsMessageHandlerRegistry {
         }
 
         @Bean
+        public PowerShellExecutor powerShellExecutor() {
+            return new PowerShellExecutor();
+        }
+
+        @Bean
+        public ProbeContextProvider probeContextProvider(PowerShellExecutor powerShellExecutor, ObjectMapper objectMapper) {
+            return new ProbeContextProvider(powerShellExecutor, objectMapper);
+        }
+
+        @Bean
         public WsMessageMapper wsMessageMapper(ObjectMapper objectMapper) {
             return new WsMessageMapper(objectMapper);
         }
@@ -80,8 +92,8 @@ public class TestWsMessageHandlerRegistry {
         }
 
         @Bean
-        public IWinEventLogReader reader(ObjectMapper objectMapper) {
-            return new PwshWinEventLogReader(objectMapper);
+        public IWinEventLogReader reader(ObjectMapper objectMapper, PowerShellExecutor powerShellExecutor, ProbeContextProvider probeContextProvider) {
+            return new PwshWinEventLogReader(objectMapper, powerShellExecutor, probeContextProvider);
         }
 
         @Bean

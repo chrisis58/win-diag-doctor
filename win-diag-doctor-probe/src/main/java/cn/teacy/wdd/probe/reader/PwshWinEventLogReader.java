@@ -3,23 +3,21 @@ package cn.teacy.wdd.probe.reader;
 import cn.teacy.wdd.common.enums.LogLevel;
 import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.common.utils.ReUtils;
+import cn.teacy.wdd.probe.component.PowerShellExecutor;
+import cn.teacy.wdd.probe.component.ProbeContextProvider;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -27,15 +25,12 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class PwshWinEventLogReader implements IWinEventLogReader {
 
-    private static final int TIMEOUT_SECONDS = 30;
-
     private final ObjectMapper objectMapper;
-
-    public PwshWinEventLogReader(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
-    }
+    private final PowerShellExecutor powerShellExecutor;
+    private final ProbeContextProvider probeContextProvider;
 
     @Override
     public LogQueryResponse readEventLogs(LogQueryRequest queryRequest) {
@@ -48,63 +43,16 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 .endHoursAgo(queryRequest.getEndHoursAgo())
                 .build();
 
-        String[] command = {
-                "cmd.exe",
-                "/C",
-                // "chcp 65001 >NUL" 切换代码页并抑制 "Active code page: 65001" 这条消息
-                // "&&" 确保只有 chcp 成功后才执行 powershell
-                // -NoProfile 启动 PowerShell 更快
-                "chcp 65001 >NUL && powershell.exe -NoProfile -Command \"" + powerShellCommand + "\""
-        };
-
-        StringBuilder jsonOutput = new StringBuilder();
-        StringBuilder errorOutput = new StringBuilder();
-
         try {
-            Process process = Runtime.getRuntime().exec(command);
+            String result = powerShellExecutor.execute(powerShellCommand);
 
-            Charset consoleEncoding = StandardCharsets.UTF_8;
-
-            // 捕获标准输出流
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream(), consoleEncoding))) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    jsonOutput.append(line);
-                }
-            }
-
-            // 捕获错误流
-            try (BufferedReader errorReader = new BufferedReader(
-                    new InputStreamReader(process.getErrorStream(), consoleEncoding))) {
-                String errorLine;
-                while ((errorLine = errorReader.readLine()) != null) {
-                    errorOutput.append(errorLine).append("\n");
-                }
-            }
-
-            // 等待进程结束，设置一个超时
-            if (!process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
-                process.destroy();
-                log.error("PowerShell 命令执行超时！");
-                return LogQueryResponse.EMPTY;
-            }
-
-            // 检查是否有错误
-            if (process.exitValue() != 0) {
-                log.error("PowerShell 命令执行失败，退出码: {}", process.exitValue());
-                log.error("错误详情: {}", errorOutput);
-                return LogQueryResponse.EMPTY;
-            }
-
-            String json = jsonOutput.toString();
-            if (json.isEmpty()) {
+            if (result.isEmpty()) {
                 log.info("未找到匹配的日志条目。");
                 return LogQueryResponse.EMPTY;
             }
 
             // PowerShell 在返回单个对象时也会将其包裹在数组中，所以这里始终解析为 List
-            List<WinEventLogEntry> entries = objectMapper.readValue(json, new TypeReference<>() {});
+            List<WinEventLogEntry> entries = objectMapper.readValue(result, new TypeReference<>() {});
 
             boolean hasMore = entries.size() > queryRequest.getMaxEvents();
 
@@ -112,7 +60,7 @@ public class PwshWinEventLogReader implements IWinEventLogReader {
                 entries = entries.subList(0, queryRequest.getMaxEvents());
             }
 
-            return new LogQueryResponse(entries, hasMore);
+            return new LogQueryResponse(entries, hasMore, probeContextProvider.getUserContext());
 
         } catch (Exception e) {
             log.error("读取 Windows 事件日志时发生异常", e);
