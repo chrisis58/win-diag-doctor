@@ -68,7 +68,10 @@ public class PowerShellExecutor {
 
         if (process.exitValue() != 0) {
             String errorMsg = stderr.toString().trim();
-            if (errorMsg.contains("NoMatchingEventsFound") || errorMsg.contains("No events were found")) {
+            if (errorMsg.contains("NoMatchingEventsFound")
+                    || errorMsg.contains("No events were found")
+                    || errorMsg.contains("unauthorized operation")
+            ) {
                 log.info("PowerShell查询未返回结果 (No events found)");
                 return "";
             }
