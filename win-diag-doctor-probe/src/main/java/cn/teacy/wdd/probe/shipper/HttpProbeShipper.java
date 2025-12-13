@@ -16,6 +16,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
+import static cn.teacy.wdd.common.constants.ProbeConstants.PROBE_ID_HEADER;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -33,6 +35,8 @@ public class HttpProbeShipper implements IProbeShipper {
                     .timeout(Duration.ofMinutes(2))
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
+                    .header(PROBE_ID_HEADER, properties.getProbeId())
+                    .header("Authorization", "Bearer " + properties.getProbeSecret())
                     .POST(HttpRequest.BodyPublishers.ofString(objectMapper.writeValueAsString(
                             result
                     ))).build();

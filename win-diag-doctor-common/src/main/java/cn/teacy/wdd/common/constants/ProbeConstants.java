@@ -2,6 +2,8 @@ package cn.teacy.wdd.common.constants;
 
 public interface ProbeConstants {
 
+    String PROBE_ID_HEADER = "X-Probe-Id";
+
     /**
      * 探针配置文件名称
      */

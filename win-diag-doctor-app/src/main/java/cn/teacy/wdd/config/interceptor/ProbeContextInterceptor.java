@@ -9,6 +9,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import static cn.teacy.wdd.common.constants.ProbeConstants.PROBE_ID_HEADER;
+
 @Slf4j
 @RequiredArgsConstructor
 public class ProbeContextInterceptor implements HandlerInterceptor {
@@ -23,7 +25,7 @@ public class ProbeContextInterceptor implements HandlerInterceptor {
 
         // 尝试从 Header 获取
         if (probeId == null || probeId.isBlank()) {
-            probeId = request.getHeader("X-Probe-ID");
+            probeId = request.getHeader(PROBE_ID_HEADER);
         }
 
         // 从 Referer 获取

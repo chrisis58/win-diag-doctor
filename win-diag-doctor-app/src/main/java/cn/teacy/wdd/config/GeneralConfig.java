@@ -2,6 +2,7 @@ package cn.teacy.wdd.config;
 
 import cn.teacy.wdd.common.interfaces.TaskIdGenerator;
 import cn.teacy.wdd.config.interceptor.ProbeContextInterceptor;
+import cn.teacy.wdd.config.interceptor.TaskResultAuthInterceptor;
 import cn.teacy.wdd.protocol.WsMessageMapper;
 import cn.teacy.wdd.protocol.WsProtocolHandlerRegistry;
 import cn.teacy.wdd.support.ProbeContext;
@@ -53,6 +54,9 @@ public class GeneralConfig implements WebMvcConfigurer {
         registry.addInterceptor(new ProbeContextInterceptor(probeContext))
                 .addPathPatterns("/chatui/index.html")
                 .addPathPatterns("/run_sse");
+
+        registry.addInterceptor(new TaskResultAuthInterceptor())
+                .addPathPatterns("/task_result/**");
     }
 
     @Bean
