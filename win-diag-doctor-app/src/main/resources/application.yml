@@ -20,6 +20,9 @@ wdd:
     # 默认连接密钥，用作哈希盐值，可通过环境变量覆盖
     connect-key: ${WDD_PROBE_CONNECT_KEY:default_connect_key}
 
+  prompts:
+    locale: zh # TODO: add more locales
+
 server:
   port: 8093
   forward-headers-strategy: native
