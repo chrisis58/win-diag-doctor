@@ -21,7 +21,7 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @see cn.teacy.wdd.common.constants.LogNames
      */
-    @JsonPropertyDescription("需要查询的日志名称，例如 `Application`, `System`, `Security` 等。")
+    @JsonPropertyDescription("Log name (e.g. Application, Security)")
     private String logName;
 
     /**
@@ -29,13 +29,13 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @see LogLevel
      */
-    @JsonPropertyDescription("需要查询的日志级别列表")
+    @JsonPropertyDescription("List of log levels")
     private List<LogLevel> levels;
 
     /**
      * 最大事件数
      */
-    @JsonPropertyDescription("最大事件数，默认10")
+    @JsonPropertyDescription("Max events limit, defaults to 10")
     private int maxEvents = 10;
 
     /**
@@ -43,7 +43,7 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
      */
-    @JsonPropertyDescription("查询多早之前的日志，单位：小时，应该传递正值，表示`多少小时前开始`")
+    @JsonPropertyDescription("Query logs starting from how many hours ago, should be a positive value")
     private Integer startHoursAgo;
 
     /**
@@ -51,7 +51,7 @@ public class LogQueryRequest extends WsMessagePayload {
      *
      * @apiNote 应该传递正值，表示“多少小时前”，而不是负值
      */
-    @JsonPropertyDescription("查询到多早之前的日志，单位：小时，应该传递正值，表示`多少小时前结束`")
+    @JsonPropertyDescription("Query logs up to how many hours ago, should be a positive value")
     private Integer endHoursAgo;
 
 }
