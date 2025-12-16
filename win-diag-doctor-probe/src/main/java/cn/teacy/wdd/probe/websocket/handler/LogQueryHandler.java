@@ -1,9 +1,7 @@
 package cn.teacy.wdd.probe.websocket.handler;
 
 import cn.teacy.wdd.common.entity.TaskExecutionResult;
-import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.common.enums.ExecutionResultEndpoint;
-import cn.teacy.wdd.probe.reader.IWinEventLogCleaner;
 import cn.teacy.wdd.probe.reader.IWinEventLogReader;
 import cn.teacy.wdd.probe.shipper.IProbeShipper;
 import cn.teacy.wdd.probe.websocket.ProbeWsClient;
@@ -16,8 +14,6 @@ import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.List;
-
 @Slf4j
 @RequiredArgsConstructor
 @WsProtocolHandler(protocols = {LogQueryRequest.class})
@@ -25,7 +21,6 @@ public class LogQueryHandler implements IWsProtocolHandler {
 
     private final IProbeShipper shipper;
     private final IWinEventLogReader reader;
-    private final IWinEventLogCleaner cleaner;
 
     private final ProbeWsClient wsClient;
 
@@ -39,9 +34,6 @@ public class LogQueryHandler implements IWsProtocolHandler {
 
             try {
                 LogQueryResponse logQueryResponse = reader.readEventLogs(request);
-
-                List<WinEventLogEntry> handled = cleaner.handle(logQueryResponse.getEntries());
-                logQueryResponse.setEntries(handled);
 
                 boolean success = shipper.ship(ExecutionResultEndpoint.LogQuery, TaskExecutionResult.success(taskId, logQueryResponse));
 

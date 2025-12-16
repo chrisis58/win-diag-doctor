@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
  * 使用 PowerShell 读取 Windows 事件日志的实现
  */
 @Slf4j
-@Component
+@Component(IWinEventLogReader.BEAN_NAME)
 @RequiredArgsConstructor
 public class PwshWinEventLogReader implements IWinEventLogReader {
 

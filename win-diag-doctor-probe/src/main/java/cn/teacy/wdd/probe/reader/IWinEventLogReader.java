@@ -1,10 +1,7 @@
 package cn.teacy.wdd.probe.reader;
 
-import cn.teacy.wdd.common.entity.WinEventLogEntry;
 import cn.teacy.wdd.protocol.command.LogQueryRequest;
 import cn.teacy.wdd.protocol.response.LogQueryResponse;
-
-import java.util.List;
 
 /**
  * Windows事件日志读取器接口
@@ -19,5 +16,7 @@ public interface IWinEventLogReader {
      * @return 事件日志条目列表
      */
     LogQueryResponse readEventLogs(LogQueryRequest queryRequest);
+
+    String BEAN_NAME = "winEventLogReader";
 
 }
