@@ -112,16 +112,22 @@ public class ProbeWsClient implements WebSocket.Listener, SmartLifecycle, IWsMes
         }
     }
 
+    @Override
     public void send(WsMessagePayload payload) {
+        send(payload, null);
+    }
+
+    @Override
+    public void send(WsMessagePayload payload, String taskId) {
         try {
-            WsMessage<?> wsMessage = new WsMessage<>(payload);
+            WsMessage<?> wsMessage = new WsMessage<>(taskId, payload);
 
             this.send(objectMapper.writeValueAsString(wsMessage));
             log.debug("WsMessage sent, mid: {}", wsMessage.getMid());
         } catch (JsonProcessingException e) {
-            log.error("Fail to serialize heartbeat: ", e);
+            log.error("Fail to serialize message: ", e);
         } catch (Exception e) {
-            log.error("Error occur during sending heartbeat", e);
+            log.error("Error occur during sending message", e);
         }
     }
 

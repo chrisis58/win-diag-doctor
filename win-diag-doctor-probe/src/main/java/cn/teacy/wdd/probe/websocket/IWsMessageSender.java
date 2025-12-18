@@ -6,4 +6,6 @@ public interface IWsMessageSender {
 
     void send(WsMessagePayload payload);
 
+    void send(WsMessagePayload payload, String taskId);
+
 }
