@@ -7,9 +7,9 @@ import cn.teacy.wdd.protocol.*;
 import cn.teacy.wdd.protocol.event.ProbeHeartbeat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.SmartLifecycle;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -26,7 +26,7 @@ import static cn.teacy.wdd.common.constants.ServiceConstants.WS_PROBE_ENDPOINT;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class ProbeWsClient implements WebSocket.Listener {
+public class ProbeWsClient implements WebSocket.Listener, SmartLifecycle, IWsMessageSender {
 
     private static final int MAX_RETRY_ATTEMPTS = 5;
 
@@ -40,6 +40,35 @@ public class ProbeWsClient implements WebSocket.Listener {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final AtomicInteger retryCount = new AtomicInteger(0);
     private ScheduledFuture<?> heartbeatTask;
+
+    private volatile boolean running;
+
+    @Override
+    public boolean isRunning() {
+        return this.running;
+    }
+
+    @Override
+    public void stop() {
+        log.info("Stopping ProbeWsClient");
+        stopHeartbeat();
+
+        if (!scheduler.isShutdown()) {
+            scheduler.shutdownNow();
+        }
+
+        if (webSocket != null && !webSocket.isOutputClosed()) {
+            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Probe shutting down");
+        }
+        this.running = false;
+    }
+
+    @Override
+    public void start() {
+        log.info("Starting ProbeWsClient");
+        this.connect();
+        this.running = true;
+    }
 
     public void connect() {
         try {
@@ -128,21 +157,6 @@ public class ProbeWsClient implements WebSocket.Listener {
 
         this.webSocket = null;
         scheduleReconnect();
-    }
-
-    @PreDestroy
-    public void destroy() {
-        log.debug("Cleaning up ProbeWsClient...");
-
-        stopHeartbeat();
-
-        if (!scheduler.isShutdown()) {
-            scheduler.shutdownNow();
-        }
-
-        if (webSocket != null && !webSocket.isOutputClosed()) {
-            webSocket.sendClose(WebSocket.NORMAL_CLOSURE, "Probe shutting down");
-        }
     }
 
     private void handleIncomingMessage(String msg) {

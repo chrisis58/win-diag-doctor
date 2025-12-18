@@ -44,7 +44,7 @@ public class HttpProbeShipper implements IProbeShipper {
             HttpResponse<String> send = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (send.statusCode() == 200) {
-                log.info("分析结果: {}", send.body());
+                log.info("任务结果上传成果: {}", send.body());
             } else {
                 log.error("分析请求失败，状态码: {}, 响应体: {}", send.statusCode(), send.body());
             }
