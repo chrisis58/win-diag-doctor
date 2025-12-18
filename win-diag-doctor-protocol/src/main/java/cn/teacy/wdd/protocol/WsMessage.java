@@ -1,17 +1,15 @@
 package cn.teacy.wdd.protocol;
 
+import cn.teacy.wdd.protocol.exception.ProtocolAnnotationAbsenceException;
+import cn.teacy.wdd.protocol.factory.WsIdGeneratorFactory;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.concurrent.atomic.AtomicLong;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class WsMessage<P extends WsMessagePayload> {
-
-    private static final AtomicLong MSG_COUNTER = new AtomicLong(1);
 
     /**
      * 消息标识，自动生成，用于调试
@@ -37,14 +35,12 @@ public class WsMessage<P extends WsMessagePayload> {
         WsProtocol annotation = payload.getClass().getAnnotation(WsProtocol.class);
 
         if (annotation == null) {
-            throw new IllegalArgumentException(
-                    String.format("Class [%s] is missing @WsMsg annotation", payload.getClass().getSimpleName())
-            );
+            throw new ProtocolAnnotationAbsenceException(payload.getClass());
         }
 
         this.identifier = annotation.identifier();
-        this.taskId = generateTaskId();
-        this.mid = generateMid();
+        this.taskId = WsIdGeneratorFactory.getInstance().generateTaskId();
+        this.mid = WsIdGeneratorFactory.getInstance().generateMessageId();
         this.payload = payload;
     }
 
@@ -52,23 +48,13 @@ public class WsMessage<P extends WsMessagePayload> {
         WsProtocol annotation = payload.getClass().getAnnotation(WsProtocol.class);
 
         if (annotation == null) {
-            throw new IllegalArgumentException(
-                    String.format("Class [%s] is missing @WsMsg annotation", payload.getClass().getSimpleName())
-            );
+            throw new ProtocolAnnotationAbsenceException(payload.getClass());
         }
 
         this.identifier = annotation.identifier();
-        this.taskId = taskId != null ? taskId : generateTaskId();
-        this.mid = generateMid();
+        this.taskId = taskId != null ? taskId : WsIdGeneratorFactory.getInstance().generateTaskId();
+        this.mid = WsIdGeneratorFactory.getInstance().generateMessageId();
         this.payload = payload;
-    }
-
-    private static String generateMid() {
-        return String.format("m-%05d", MSG_COUNTER.getAndIncrement());
-    }
-
-    private String generateTaskId() {
-        return String.format("t-%05d", MSG_COUNTER.getAndIncrement());
     }
 
 }

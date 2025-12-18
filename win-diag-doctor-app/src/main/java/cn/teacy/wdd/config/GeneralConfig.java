@@ -1,6 +1,5 @@
 package cn.teacy.wdd.config;
 
-import cn.teacy.wdd.common.interfaces.TaskIdGenerator;
 import cn.teacy.wdd.config.interceptor.ProbeContextInterceptor;
 import cn.teacy.wdd.config.interceptor.TaskResultAuthInterceptor;
 import cn.teacy.wdd.protocol.WsMessageMapper;
@@ -28,11 +27,6 @@ import java.util.UUID;
 public class GeneralConfig implements WebMvcConfigurer {
 
     private final ProbeContext probeContext;
-
-    @Bean
-    public TaskIdGenerator taskIdGenerator() {
-        return UUID.randomUUID()::toString;
-    }
 
     @Bean
     public WsMessageMapper wsPayloadExtractor(ObjectMapper objectMapper) {
