@@ -20,8 +20,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import java.util.UUID;
-
 @Configuration
 @RequiredArgsConstructor
 public class GeneralConfig implements WebMvcConfigurer {
