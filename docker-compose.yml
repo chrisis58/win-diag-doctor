@@ -8,7 +8,9 @@ services:
     ports:
       - "${WDD_SERVER_PORT:-8093}:8093"
     environment:
-      - AI_DASHSCOPE_API_KEY=${AI_DASHSCOPE_API_KEY}
+      - AI_API_KEY=${AI_API_KEY}
+      - AI_BASE_URL=${AI_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode}
+      - AI_CHAT_MODEL=${AI_CHAT_MODEL:-qwen3-max}
 
       - WDD_USER_NAME=${WDD_USER_NAME:-admin}
       - WDD_USER_PASSWORD=${WDD_USER_PASSWORD:-admin}
