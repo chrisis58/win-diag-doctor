@@ -49,7 +49,11 @@
 ### 前置要求
 
 - Docker, Docker Compose
-- 阿里云 DashScope API Key (用于驱动 AI)
+- 阿里云 DashScope API Key (推荐)
+
+> WDD 使用 OpenAI 兼容模式进行模型实例构建，所以你也可以选择其他兼容 OpenAI 格式的模型提供商，比如 ollama 等。
+>
+> 值得注意的是，如果需要修改模型提供商，你需要同时在配置中修改 `AI_BASE_URL` 以及 `AI_MODEL` 的值。
 
 ### 1. 启动服务端 (Server)
 
@@ -67,7 +71,7 @@
    docker compose up -d
    ```
    
-   > 你也可以在项目 [构建历史](https://github.com/chrisis58/win-diag-doctor/actions/workflows/docker-build.yml) 中下载预构建的镜像。
+   > 你也可以在项目 [构建历史](https://github.com/chrisis58/win-diag-doctor/actions/workflows/docker-build.yml) 中直接下载预构建的镜像。
    
 4. 访问 Dashboard：打开浏览器访问 http://localhost:8093/dashboard.html
 
