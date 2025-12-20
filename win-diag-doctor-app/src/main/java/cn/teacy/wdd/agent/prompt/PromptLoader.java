@@ -1,14 +1,14 @@
 package cn.teacy.wdd.agent.prompt;
 
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Map;
 
 @Component
 public class PromptLoader {
@@ -24,25 +24,29 @@ public class PromptLoader {
         this.locale = locale;
     }
 
-    public String loadPrompt(String identifier, @Nullable String fallback) {
+    public PromptTemplate getTemplate(PromptIdentifier promptIdentifier) {
+        String identifier = promptIdentifier.getIdentifier();
+        String fallback = promptIdentifier.getDefaultPrompt();
+
         String path = String.format("classpath:prompts/%s.%s.md", identifier, locale);
         Resource resource = resourceLoader.getResource(path);
 
-        try {
-            if (!resource.exists()) {
-                if (fallback != null && !fallback.isEmpty()) {
-                    return fallback;
-                }
-                throw new RuntimeException("Prompt file not found: " + path);
+        if (!resource.exists()) {
+            if (StringUtils.hasText(fallback)) {
+                return new PromptTemplate(fallback);
             }
-            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load prompt for identifier: " + identifier, e);
+            throw new RuntimeException("Prompt file not found and no fallback provided: " + path);
         }
+
+        return new PromptTemplate(resource);
     }
 
     public String loadPrompt(PromptIdentifier promptIdentifier) {
-        return loadPrompt(promptIdentifier.getIdentifier(), promptIdentifier.getDefaultPrompt());
+        return render(promptIdentifier, Collections.emptyMap());
+    }
+
+    public String render(PromptIdentifier promptIdentifier, Map<String, Object> variables) {
+        return getTemplate(promptIdentifier).render(variables);
     }
 
 }
