@@ -16,7 +16,6 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.BiFunction;
 
 import static cn.teacy.wdd.agent.prompt.PromptIdentifier.QUERY_EVENT_LOG;
 import static cn.teacy.wdd.constants.JToonEncodeOption.DEFAULT_OPTIONS;
@@ -32,25 +31,27 @@ public class DiagnosticToolConfig {
     @DiagnosticTool
     public ToolCallback eventLogQueryTool(LogQueryService logQueryService) {
         return FunctionToolCallback
-                .builder(QUERY_EVENT_LOG.getIdentifier(), new BiFunction<LogQueryRequest, ToolContext, String>() {
-                    @Override
-                    public String apply(LogQueryRequest request, ToolContext context) {
+                .builder(QUERY_EVENT_LOG.getIdentifier(), (LogQueryRequest request, ToolContext context) -> {
 
-                        Optional<Map<String, Object>> metadata = ((RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY)).metadata();
+                    Optional<Map<String, Object>> metadata = ((RunnableConfig) context.getContext().get(AGENT_CONFIG_CONTEXT_KEY)).metadata();
 
-                        if (metadata.isEmpty()) {
-                            return "ERROR: Probe ID missing in context.";
-                        }
+                    if (metadata.isEmpty()) {
+                        return "ERROR: Probe ID missing in context.";
+                    }
 
-                        String probeId = metadata.get().get("probe_id").toString();
+                    String probeId = metadata.get().get("probe_id").toString();
 
-                        if (probeId == null || probeId.isBlank()) {
-                            return "ERROR: Probe ID missing in context.";
-                        }
+                    if (probeId == null || probeId.isBlank()) {
+                        return "ERROR: Probe ID missing in context.";
+                    }
 
+                    try {
                         LogQueryResponse queryResponse = logQueryService.queryLog(probeId, request);
 
                         return JToon.encode(queryResponse, DEFAULT_OPTIONS);
+
+                    } catch (Exception e) {
+                        return "日志查询失败: " + e.getMessage();
                     }
                 })
                 .description(promptLoader.loadPrompt(QUERY_EVENT_LOG))
