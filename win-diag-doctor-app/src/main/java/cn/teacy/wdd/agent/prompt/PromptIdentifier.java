@@ -9,6 +9,8 @@ public enum PromptIdentifier {
 
     CHAT_AGENT_SYS_PROMPT("chatAgentSysPrompt", "You are a professional Windows system diagnostic expert. Provide accurate and concise answers to user questions based on the information available."),
 
+    PRIVILEGE_CHECKER_SYS_PROMPT("privilegeCheckerSysPrompt", "You are a privilege escalation vulnerability detection expert. Analyze the provided system information to identify potential privilege escalation vulnerabilities and suggest remediation steps.")
+
     ;
 
     PromptIdentifier(String identifier, String defaultPrompt) {
