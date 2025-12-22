@@ -35,10 +35,10 @@ public class ChatAgentConfig {
     @Value("${spring.ai.openai.chat.options.model}")
     private String defaultModel;
 
-    @Value("${wdd.agent.model.think-model}")
+    @Value("${wdd.agent.think-model}")
     private String thinkModel;
 
-    @Value("${wdd.agent.model.flash-model}")
+    @Value("${wdd.agent.flash-model}")
     private String flashModel;
 
     @Bean
@@ -84,6 +84,7 @@ public class ChatAgentConfig {
     }
 
     @Bean
+    @Primary
     public ChatClient chatClient(ChatModel chatModel) {
         return ChatClient.builder(chatModel)
                 .build();
