@@ -2,26 +2,25 @@ package cn.teacy.wdd.agent.node;
 
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.action.InterruptableAction;
+import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 
+import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
-public abstract class InterruptableNodeAction extends AsyncBaseNodeAction implements InterruptableAction {
-    private final String message;
+@FunctionalInterface
+public interface InterruptableNodeAction extends InterruptableAction, AsyncNodeActionWithConfig {
 
-    public InterruptableNodeAction(String nodeId, String message) {
-        super(nodeId);
-        this.message = message;
-    }
-
-    /**
-     * 仅返回预设的消息内容
-     *
-     */
     @Override
-    public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
-        return CompletableFuture.completedFuture(Map.of("messages", message));
+    Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config);
+
+    @Override
+    default CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
+        // 返回空 Map，表示对 State 不做任何修改
+        return CompletableFuture.completedFuture(Collections.emptyMap());
     }
 
 }

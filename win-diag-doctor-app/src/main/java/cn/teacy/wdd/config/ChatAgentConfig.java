@@ -15,9 +15,11 @@ import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 import java.util.List;
 
@@ -33,19 +35,52 @@ public class ChatAgentConfig {
     @Value("${spring.ai.openai.chat.options.model}")
     private String defaultModel;
 
+    @Value("${wdd.agent.model.think-model}")
+    private String thinkModel;
+
+    @Value("${wdd.agent.model.flash-model}")
+    private String flashModel;
+
     @Bean
-    public ChatModel chatModel() {
+    public OpenAiApi openAiApi() {
+        return OpenAiApi.builder()
+                .apiKey(apiKey)
+                .baseUrl(baseUrl)
+                .build();
+    }
+
+    @Bean
+    @Primary
+    public ChatModel defaultChatModel(OpenAiApi openAiApi) {
         return OpenAiChatModel.builder()
-                .defaultOptions(
-                        OpenAiChatOptions.builder()
-                                .model(defaultModel)
-                                .build()
-                ).openAiApi(
-                        OpenAiApi.builder()
-                                .apiKey(apiKey)
-                                .baseUrl(baseUrl)
-                                .build()
-                ).build();
+                .openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder()
+                        .model(defaultModel)
+                        .temperature(0.7)
+                        .build())
+                .build();
+    }
+
+    @Bean("thinkChatModel")
+    public ChatModel thinkChatModel(OpenAiApi openAiApi) {
+        return OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder()
+                        .model(thinkModel)
+                        .temperature(0.8)
+                        .build())
+                .build();
+    }
+
+    @Bean("flashChatModel")
+    public ChatModel flashChatModel(OpenAiApi openAiApi) {
+        return OpenAiChatModel.builder()
+                .openAiApi(openAiApi)
+                .defaultOptions(OpenAiChatOptions.builder()
+                        .model(flashModel)
+                        .temperature(0.1)
+                        .build())
+                .build();
     }
 
     @Bean
@@ -54,7 +89,18 @@ public class ChatAgentConfig {
                 .build();
     }
 
+    @Bean("thinkChatClient")
+    public ChatClient thinkChatClient(@Qualifier("thinkChatModel") ChatModel thinkChatModel) {
+        return ChatClient.builder(thinkChatModel).build();
+    }
+
+    @Bean("flashChatClient")
+    public ChatClient flashChatClient(@Qualifier("flashChatModel") ChatModel flashChatModel) {
+        return ChatClient.builder(flashChatModel).build();
+    }
+
     @Bean
+    @Primary
     public AgentLoader agentLoader(
             PromptLoader promptLoader,
             ChatClient chatClient,

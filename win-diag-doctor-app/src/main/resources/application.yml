@@ -32,6 +32,11 @@ wdd:
   prompts:
     locale: zh # TODO: add more locales
 
+  agent:
+    think-model: ${WDD_AGENT_THINKING_MODEL:${AI_CHAT_MODEL}}
+    flash-model: ${WDD_AGENT_FLASH_MODEL:${AI_CHAT_MODEL}}
+
+
 server:
   port: 8093
   forward-headers-strategy: native
