@@ -1,15 +1,6 @@
 spring:
-  ai:
-    openai:
-      base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
-      # 参考官方文档获取 API Key
-      # https://help.aliyun.com/zh/model-studio/first-api-call-to-qwen?spm=a2c4g.11186623.help-menu-2400256.d_0_0_1.30237dc5FLsnId
-      api-key: ${AI_API_KEY}
-      chat:
-        options:
-          model: ${AI_CHAT_MODEL:qwen3-max}
-  config:
-    name: win-diag-doctor
+  application:
+    name: win-diag-doctor-app
 
   security:
     user:
@@ -17,12 +8,17 @@ spring:
       name: ${WDD_USER_NAME:admin}
       password: ${WDD_USER_PASSWORD:admin}
       roles: ADMIN
-
-  autoconfigure:
-    exclude:
-      - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
-
 wdd:
+  ai:
+    base-url: ${AI_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode}
+    api-key: ${AI_API_KEY} # 必填，不设默认值以 Fail Fast
+    default-model: ${AI_CHAT_MODEL:qwen-max} # 全局默认模型
+
+    think-model: ${WDD_AGENT_THINK_MODEL:${wdd.ai.default-model}}
+    flash-model: ${WDD_AGENT_FLASH_MODEL:${wdd.ai.default-model}}
+
+    timeout: 60s
+
   probe:
     template-path: data/probe-templates
     # 默认连接密钥，用作哈希盐值，可通过环境变量覆盖
@@ -31,11 +27,6 @@ wdd:
   prompts:
     locale: zh # TODO: add more locales
 
-  agent:
-    think-model: ${WDD_AGENT_THINKING_MODEL:${AI_CHAT_MODEL:qwen3-max}}
-    flash-model: ${WDD_AGENT_FLASH_MODEL:${AI_CHAT_MODEL:qwen3-max}}
-
-
 server:
-  port: 8093
+  port: ${SERVER_PORT:8093}
   forward-headers-strategy: native
