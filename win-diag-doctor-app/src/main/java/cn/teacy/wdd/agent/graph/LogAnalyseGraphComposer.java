@@ -6,6 +6,7 @@ import cn.teacy.wdd.agent.node.InterruptableNodeAction;
 import cn.teacy.wdd.agent.prompt.PromptIdentifier;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
 import cn.teacy.wdd.agent.service.IUserContextProvider;
+import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
 import cn.teacy.wdd.agent.utils.ModelChatUtils;
 import cn.teacy.wdd.common.entity.UserContext;
 import com.alibaba.cloud.ai.graph.*;
@@ -17,6 +18,8 @@ import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.NonNull;
 import lombok.Getter;
@@ -24,6 +27,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -52,11 +56,14 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
     private final MemorySaver saver = new MemorySaver();
 
-    @GraphNode("privilege-check")
+    @GraphNode("privilege-checker")
     private final AsyncNodeActionWithConfig privilegeCheckNode;
 
     @GraphNode("pre-check-result-handler")
     private final InterruptableNodeAction privilegeCheckResultHandleNode;
+
+    @GraphNode("execution-planner")
+    private final AsyncNodeActionWithConfig executionPlanner;
 
     record PrivilegeCheckerQuery(String query, UserContext userContext) {}
 
@@ -71,7 +78,8 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             @Qualifier("flashChatClient") ChatClient flashChatClient,
             @Qualifier("thinkChatClient") ChatClient thinkChatClient,
             IUserContextProvider userContextProvider,
-            PromptLoader promptLoader
+            PromptLoader promptLoader,
+            @DiagnosticTool List<ToolCallback> diagnosticTools
     ) {
 
         this.privilegeCheckNode = (state, config) -> {
@@ -108,7 +116,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
             Optional<Object> value = state.value(LogAnalyseGraphKeys.PRIVILEGE_QUALIFIED.getKey());
 
-            if (value.isPresent() && Boolean.TRUE.equals(value.get())) {
+            if (value.isPresent() && String.valueOf(Boolean.TRUE).equals(value.get())) {
                 // Privilege check passed
                 return Optional.empty();
             }
@@ -123,13 +131,36 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             return Optional.of(interruption);
         };
 
+        this.executionPlanner = (state, config) -> {
+
+            Optional<Object> query = state.value(LogAnalyseGraphKeys.QUERY.getKey());
+            assert query.isPresent();
+            String queryString = query.get().toString();
+
+            ChatResponse response = thinkChatClient.prompt()
+                    .system(promptLoader.loadPrompt(PromptIdentifier.LOG_ANALYSE_EXECUTION_PLANNER_SYS_PROMPT))
+                    .user(JToon.encode(Map.of(
+                            "query", queryString,
+                            "available_tools", diagnosticTools.stream().map(ToolCallback::getToolDefinition).map(ToolDefinition::description).toList()
+                    )))
+                    .call()
+                    .chatResponse();
+
+            String output = ModelChatUtils.extractContent(response, "计划生成服务响应异常");
+
+            return CompletableFuture.completedFuture(
+                    Map.of(LogAnalyseGraphKeys.EXECUTION_PLAN.getKey(), output)
+            );
+        };
+
     }
 
     @Override
     protected void addEdges(StateGraph builder) throws GraphStateException {
         builder.addEdge(StateGraph.START, idOf(privilegeCheckNode));
         builder.addEdge(idOf(privilegeCheckNode), idOf(privilegeCheckResultHandleNode));
-        builder.addEdge(idOf(privilegeCheckResultHandleNode), StateGraph.END);
+        builder.addEdge(idOf(privilegeCheckResultHandleNode), idOf(executionPlanner));
+        builder.addEdge(idOf(executionPlanner), StateGraph.END);
     }
 
     @Override
