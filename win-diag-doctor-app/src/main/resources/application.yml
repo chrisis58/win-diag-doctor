@@ -20,7 +20,6 @@ spring:
 
   autoconfigure:
     exclude:
-      - com.alibaba.cloud.ai.autoconfigure.dashscope.DashScopeChatAutoConfiguration
       - org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfiguration
 
 wdd:

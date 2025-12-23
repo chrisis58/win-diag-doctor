@@ -74,6 +74,12 @@
         <dependency>
             <groupId>com.alibaba.cloud.ai</groupId>
             <artifactId>spring-ai-alibaba-studio</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.cloud.ai</groupId>
+                    <artifactId>spring-ai-alibaba-autoconfigure-dashscope</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
