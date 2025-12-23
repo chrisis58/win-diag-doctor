@@ -7,6 +7,7 @@ import cn.teacy.wdd.protocol.IWsProtocolHandler;
 import cn.teacy.wdd.protocol.WsMessagePayload;
 import cn.teacy.wdd.protocol.WsProtocolHandler;
 import cn.teacy.wdd.protocol.command.GetUserContext;
+import cn.teacy.wdd.protocol.event.TaskStatusUpdate;
 import cn.teacy.wdd.protocol.response.GetUserContextResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,9 +25,14 @@ public class UserContextGetHandler implements IWsProtocolHandler {
 
         log.info("received get user context request, taskId: {}", taskId);
 
-        UserContext userContext = probeContextProvider.getUserContext();
+        try {
+            UserContext userContext = probeContextProvider.getUserContext();
 
-        messageSender.send(new GetUserContextResponse(userContext), taskId);
+            messageSender.send(new GetUserContextResponse(userContext), taskId);
+        } catch (Exception e) {
+            log.error("handle get user context failed, taskId: {}", taskId, e);
+            messageSender.send(TaskStatusUpdate.fail(taskId, "Failed to get user context: " + e.getMessage()));
+        }
 
     }
 }
