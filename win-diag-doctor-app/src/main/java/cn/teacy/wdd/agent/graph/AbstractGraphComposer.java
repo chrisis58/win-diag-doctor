@@ -37,7 +37,7 @@ public abstract class AbstractGraphComposer {
         ));
 
         Set<String> registeredIds = new HashSet<>();
-        StateGraph finalBuilder = builder;
+        StateGraph finalBuilder = beforeRegisterNodes(builder);
 
         try {
             ReflectionUtils.doWithFields(this.getClass(), field -> {
@@ -172,6 +172,10 @@ public abstract class AbstractGraphComposer {
     abstract protected CompileConfig compileConfig();
 
     protected StateGraph beforeCompile(StateGraph builder) {
+        return builder;
+    }
+
+    protected StateGraph beforeRegisterNodes(StateGraph builder) {
         return builder;
     }
 
