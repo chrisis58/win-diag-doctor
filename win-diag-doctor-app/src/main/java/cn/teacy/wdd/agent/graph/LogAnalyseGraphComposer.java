@@ -16,7 +16,6 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.felipestanzani.jtoon.JToon;
-import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.lang.NonNull;
@@ -63,7 +62,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
     @NonNull
     @Override
-    Class<? extends GraphKeys> determineGraphKeysClass() {
+    protected Class<? extends GraphKeys> determineGraphKeysClass() {
         return LogAnalyseGraphKeys.class;
     }
 
@@ -127,24 +126,24 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     }
 
     @Override
-    void addEdges(StateGraph builder) throws GraphStateException {
+    protected void addEdges(StateGraph builder) throws GraphStateException {
         builder.addEdge(StateGraph.START, idOf(privilegeCheckNode));
         builder.addEdge(idOf(privilegeCheckNode), idOf(privilegeCheckResultHandleNode));
         builder.addEdge(idOf(privilegeCheckResultHandleNode), StateGraph.END);
     }
 
-    @Bean
-    public CompiledGraph logAnalyseGraph() throws GraphStateException {
-
-        StateGraph builder = initGraphBuilder();
-
-        CompileConfig compileConfig = CompileConfig.builder()
+    @Override
+    protected CompileConfig compileConfig() {
+        return CompileConfig.builder()
                 .saverConfig(SaverConfig.builder()
                         .register(saver)
                         .build())
                 .build();
+    }
 
-        return builder.compile(compileConfig);
+    @Bean
+    public CompiledGraph logAnalyseGraph() {
+        return compose();
     }
 
 }
