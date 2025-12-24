@@ -134,7 +134,7 @@ public class TestLogAnalyseGraph {
 
         CompiledGraph graph = composer.logAnalyseGraph();
 
-        Map<String, Object> inputs = Map.of("query", "帮我检查系统日志有没有异常");
+        Map<String, Object> inputs = Map.of(LogAnalyseGraphComposer.KEY_QUERY, "帮我检查系统日志有没有异常");
         RunnableConfig config = RunnableConfig.builder().build();
 
         long start = System.currentTimeMillis();
@@ -142,6 +142,7 @@ public class TestLogAnalyseGraph {
         System.out.println("调用模型耗时: " + (System.currentTimeMillis() - start) + "ms");
 
         assertTrue(graphExecResult.interrupted(), "Graph 应该被中断");
+        assertTrue(graphExecResult.state().value(LogAnalyseGraphComposer.KEY_EXECUTION_PLAN).isEmpty());
     }
 
     @Test

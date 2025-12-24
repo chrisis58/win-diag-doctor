@@ -1,24 +1,21 @@
 package cn.teacy.wdd.agent.graph;
 
 import cn.teacy.wdd.agent.common.GraphInitializationException;
-import cn.teacy.wdd.agent.common.GraphKeys;
+import cn.teacy.wdd.agent.common.GraphKey;
 import cn.teacy.wdd.agent.common.GraphNode;
-import cn.teacy.wdd.agent.utils.GraphUtils;
 import com.alibaba.cloud.ai.graph.CompileConfig;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.KeyStrategy;
 import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Modifier;
+import java.util.*;
 
 @Slf4j
 public abstract class AbstractGraphComposer {
@@ -32,47 +29,31 @@ public abstract class AbstractGraphComposer {
     private final Map<Object, String> nodeInstanceToIdMap = new IdentityHashMap<>();
 
     protected CompiledGraph compose() {
-        StateGraph builder = new StateGraph(GraphUtils.buildKeyStrategyFactory(
-                this.determineGraphKeysClass()
-        ));
 
-        Set<String> registeredIds = new HashSet<>();
-        StateGraph finalBuilder = beforeRegisterNodes(builder);
+        Map<String, KeyStrategy> strategyMap = new HashMap<>();
+        Map<String, Object> nodeMap = new LinkedHashMap<>();
+
+        ReflectionUtils.doWithFields(this.getClass(), field -> {
+            if (field.isAnnotationPresent(GraphKey.class)) {
+                collectGraphKey(field, strategyMap);
+            }
+            else if (field.isAnnotationPresent(GraphNode.class)) {
+                collectGraphNode(field, nodeMap);
+            }
+        });
+
+        if (strategyMap.isEmpty()) {
+            log.warn("No graph keys found in {}.", this.getClass().getSimpleName());
+        }
+
+        StateGraph builder = new StateGraph(() -> strategyMap);
+        beforeRegisterNodes(builder);
+        nodeMap.forEach((nodeId, instance) -> registerNode(builder, nodeId, instance));
 
         try {
-            ReflectionUtils.doWithFields(this.getClass(), field -> {
-                String nodeId = this.idOfField(field);
-                if (nodeId == null) return;
+            addEdges(builder);
 
-                if (registeredIds.contains(nodeId)) {
-                    throw new GraphInitializationException("Duplicate Node ID detected: " + nodeId);
-                }
-
-                ReflectionUtils.makeAccessible(field);
-                Object instance;
-                try {
-                    instance = field.get(this);
-                } catch (IllegalAccessException e) {
-                    throw new GraphInitializationException("Failed to access field: " + field.getName(), e);
-                }
-
-                if (instance == null) {
-                    throw new GraphInitializationException("Field '" + field.getName() + "' is annotated with @GraphNode but value is null.");
-                }
-
-                if (nodeInstanceToIdMap.containsKey(instance)) {
-                    throw new GraphInitializationException("Duplicate Node Instance detected for field: " + field.getName());
-                }
-
-                nodeInstanceToIdMap.put(instance, nodeId);
-                registeredIds.add(nodeId);
-
-                registerNode(finalBuilder, nodeId, instance);
-            });
-
-            addEdges(finalBuilder);
-
-            builder = beforeCompile(finalBuilder);
+            beforeCompile(builder);
 
             return builder.compile(compileConfig());
 
@@ -86,10 +67,68 @@ public abstract class AbstractGraphComposer {
 
     }
 
+    private void collectGraphKey(Field field, Map<String, KeyStrategy> strategyMap) {
+        int modifiers = field.getModifiers();
+        boolean isValidConstant = Modifier.isStatic(modifiers)
+                && Modifier.isFinal(modifiers)
+                && field.getType().equals(String.class);
+
+        if (!isValidConstant) {
+            throw new GraphInitializationException(
+                    "Field [" + field.getName() + "] is annotated with @GraphKey but is not 'static final String'."
+            );
+        }
+
+        try {
+            ReflectionUtils.makeAccessible(field);
+            String keyName = (String) field.get(null);
+            if (keyName == null || keyName.isBlank()) {
+                throw new GraphInitializationException("Graph key value cannot be empty: " + field.getName());
+            }
+
+            if (!strategyMap.containsKey(keyName)) {
+                GraphKey annotation = field.getAnnotation(GraphKey.class);
+                KeyStrategy strategy = annotation.strategy().getDeclaredConstructor().newInstance();
+                strategyMap.putIfAbsent(keyName, strategy); // subclass prior to superclass
+            }
+        } catch (Exception e) {
+            throw new GraphInitializationException("Failed to process GraphKey field: " + field.getName(), e);
+        }
+    }
+
+    private void collectGraphNode(Field field, Map<String, Object> nodeMap) {
+        String nodeId = field.getAnnotation(GraphNode.class).value();
+        if (nodeMap.containsKey(nodeId)) {
+            throw new GraphInitializationException("Duplicate Node ID detected: " + nodeId);
+        }
+
+        if (VALID_NODE_TYPES.stream().noneMatch(t -> t.isAssignableFrom(field.getType()))) {
+            log.warn("Field '{}' is annotated with @GraphNode but has invalid type.", field.getName());
+            return;
+        }
+
+        ReflectionUtils.makeAccessible(field);
+        try {
+            Object instance = field.get(this);
+            if (instance == null) {
+                throw new GraphInitializationException("Node field '" + field.getName() + "' is null.");
+            }
+
+            if (nodeInstanceToIdMap.containsKey(instance)) {
+                throw new GraphInitializationException("Duplicate Node Instance detected: " + field.getName());
+            }
+
+            nodeMap.put(nodeId, instance);
+            nodeInstanceToIdMap.put(instance, nodeId);
+
+        } catch (IllegalAccessException e) {
+            throw new GraphInitializationException("Failed to access node field: " + field.getName(), e);
+        }
+    }
+
     /**
      * 如果实例类型有效，则将其注册到图中
      * {@link AbstractGraphComposer#VALID_NODE_TYPES}
-     * {@link AbstractGraphComposer#validType(Field)}
      */
     private void registerNode(StateGraph builder, String nodeId, Object instance) {
         try {
@@ -106,32 +145,6 @@ public abstract class AbstractGraphComposer {
         } catch (GraphStateException e) {
             throw new GraphInitializationException("Failed to register node '" + nodeId + "': " + e.getMessage(), e);
         }
-    }
-
-    private boolean validType(Field field) {
-        return VALID_NODE_TYPES.stream().anyMatch(type -> type.isAssignableFrom(field.getType()));
-    }
-
-    @Nullable
-    private String idOfField(Field field) {
-        if (field == null) {
-            return null;
-        }
-
-        GraphNode annotation = field.getAnnotation(GraphNode.class);
-        if (annotation == null) {
-            return null;
-        }
-
-        if (!this.validType(field)) {
-            log.warn("Field '{}' is annotated with @GraphNode but has invalid type: {}.",
-                    field.getName(),
-                    field.getType().getName()
-            );
-            return null;
-        }
-
-        return annotation.value();
     }
 
     /**
@@ -161,22 +174,14 @@ public abstract class AbstractGraphComposer {
         return id;
     }
 
-    /**
-     * 确定图的变量枚举类
-     */
-    @NonNull
-    abstract protected Class<? extends GraphKeys> determineGraphKeysClass();
-
     abstract protected void addEdges(StateGraph builder) throws GraphStateException;
 
     abstract protected CompileConfig compileConfig();
 
-    protected StateGraph beforeCompile(StateGraph builder) {
-        return builder;
+    protected void beforeCompile(StateGraph builder) {
     }
 
-    protected StateGraph beforeRegisterNodes(StateGraph builder) {
-        return builder;
+    protected void beforeRegisterNodes(StateGraph builder) {
     }
 
 }

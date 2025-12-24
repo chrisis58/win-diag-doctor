@@ -1,7 +1,7 @@
 package cn.teacy.wdd.agent.graph;
 
+import cn.teacy.wdd.agent.common.GraphKey;
 import cn.teacy.wdd.agent.common.GraphNode;
-import cn.teacy.wdd.agent.common.GraphKeys;
 import cn.teacy.wdd.agent.node.InterruptableNodeAction;
 import cn.teacy.wdd.agent.prompt.PromptIdentifier;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
@@ -15,14 +15,11 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
-import com.alibaba.cloud.ai.graph.state.strategy.ReplaceStrategy;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.lang.NonNull;
-import lombok.Getter;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -35,26 +32,22 @@ import java.util.concurrent.CompletableFuture;
 @Component
 public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
-    @Getter
-    enum LogAnalyseGraphKeys implements GraphKeys {
-        QUERY("query", new ReplaceStrategy()),
-        PRIVILEGE_QUALIFIED("privilege-qualified", new ReplaceStrategy()),
-        EXECUTION_PLAN("execution-plan", new ReplaceStrategy()),
-        EVENT_LOG_ENTRIES("event-log-entries", new ReplaceStrategy()),
-        ANALYSE_REPORT("analyse-report", new ReplaceStrategy())
-        ;
-
-        private final String key;
-        private final KeyStrategy strategy;
-
-        LogAnalyseGraphKeys(String key, KeyStrategy strategy) {
-            this.key = key;
-            this.strategy = strategy;
-        }
-
-    }
-
     private final MemorySaver saver = new MemorySaver();
+
+    @GraphKey
+    public static final String KEY_QUERY = "query";
+
+    @GraphKey
+    private static final String KEY_PRIVILEGE_QUALIFIED = "privilege-qualified";
+
+    @GraphKey
+    public static final String KEY_EXECUTION_PLAN = "execution-plan";
+
+    @GraphKey
+    private static final String KEY_EVENT_LOG_ENTRIES = "event-log-entries";
+
+    @GraphKey
+    public static final String KEY_ANALYSE_REPORT = "analyse-report";
 
     @GraphNode("privilege-checker")
     private final AsyncNodeActionWithConfig privilegeCheckNode;
@@ -67,12 +60,6 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
     record PrivilegeCheckerQuery(String query, UserContext userContext) {}
 
-    @NonNull
-    @Override
-    protected Class<? extends GraphKeys> determineGraphKeysClass() {
-        return LogAnalyseGraphKeys.class;
-    }
-
     /** 在此构造器中初始化各个节点 */
     public LogAnalyseGraphComposer(
             @Qualifier("flashChatClient") ChatClient flashChatClient,
@@ -84,10 +71,10 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
         this.privilegeCheckNode = (state, config) -> {
 
-            Optional<Object> query = state.value(LogAnalyseGraphKeys.QUERY.getKey());
+            Optional<Object> query = state.value(KEY_QUERY);
             if (query.isEmpty()) {
                 return CompletableFuture.completedFuture(
-                        Map.of(LogAnalyseGraphKeys.PRIVILEGE_QUALIFIED.getKey(), "Cannot perform privilege check: query is missing.")
+                        Map.of(KEY_PRIVILEGE_QUALIFIED, "Cannot perform privilege check: query is missing.")
                 );
             }
 
@@ -108,13 +95,13 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             }
 
             return CompletableFuture.completedFuture(
-                    Map.of(LogAnalyseGraphKeys.PRIVILEGE_QUALIFIED.getKey(), output)
+                    Map.of(KEY_PRIVILEGE_QUALIFIED, output)
             );
         };
 
         this.privilegeCheckResultHandleNode = (nodeId, state, config) -> {
 
-            Optional<Object> value = state.value(LogAnalyseGraphKeys.PRIVILEGE_QUALIFIED.getKey());
+            Optional<Object> value = state.value(KEY_PRIVILEGE_QUALIFIED);
 
             if (value.isPresent() && String.valueOf(Boolean.TRUE).equals(value.get())) {
                 // Privilege check passed
@@ -133,7 +120,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
         this.executionPlanner = (state, config) -> {
 
-            Optional<Object> query = state.value(LogAnalyseGraphKeys.QUERY.getKey());
+            Optional<Object> query = state.value(KEY_QUERY);
             assert query.isPresent();
             String queryString = query.get().toString();
 
@@ -149,7 +136,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             String output = ModelChatUtils.extractContent(response, "计划生成服务响应异常");
 
             return CompletableFuture.completedFuture(
-                    Map.of(LogAnalyseGraphKeys.EXECUTION_PLAN.getKey(), output)
+                    Map.of(KEY_EXECUTION_PLAN, output)
             );
         };
 
