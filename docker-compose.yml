@@ -6,14 +6,21 @@ services:
     image: win-diag-doctor:latest
     container_name: wdd-server
     ports:
-      - "${WDD_SERVER_PORT:-8093}:8093"
+      - "${SERVER_PORT:-8093}:8093"
     environment:
+      # --- AI 核心配置 ---
       - AI_API_KEY=${AI_API_KEY}
       - AI_BASE_URL=${AI_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode}
-      - AI_CHAT_MODEL=${AI_CHAT_MODEL:-qwen3-max}
+      - AI_CHAT_MODEL=${AI_CHAT_MODEL:-qwen-max}
 
+      # 如果 .env 中未定义，如果留空会自动回退使用 AI_CHAT_MODEL
+      - WDD_AGENT_THINK_MODEL=${WDD_AGENT_THINK_MODEL}
+      - WDD_AGENT_FLASH_MODEL=${WDD_AGENT_FLASH_MODEL}
+
+      # --- 安全配置 ---
       - WDD_USER_NAME=${WDD_USER_NAME:-admin}
       - WDD_USER_PASSWORD=${WDD_USER_PASSWORD:-admin}
 
+      # --- 探针配置 ---
       - WDD_PROBE_CONNECT_KEY=${WDD_PROBE_CONNECT_KEY:-default_connect_key}
     restart: unless-stopped
