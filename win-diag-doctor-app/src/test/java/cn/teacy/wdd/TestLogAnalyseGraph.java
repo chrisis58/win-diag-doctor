@@ -2,25 +2,32 @@ package cn.teacy.wdd;
 
 import cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
+import cn.teacy.wdd.agent.service.IEventLogQueryService;
 import cn.teacy.wdd.agent.service.IUserContextProvider;
 import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
 import cn.teacy.wdd.agent.utils.GraphUtils;
 import cn.teacy.wdd.common.entity.UserContext;
+import cn.teacy.wdd.protocol.response.LogQueryResponse;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.BDDMockito;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 
 @SpringBootTest
 public class TestLogAnalyseGraph {
@@ -36,9 +43,27 @@ public class TestLogAnalyseGraph {
     @Qualifier("thinkChatClient")
     private ChatClient thinkChatClient;
 
+    @MockitoBean
+    private IEventLogQueryService mockEventLogQueryService;
+
     @Autowired
     @DiagnosticTool
     private List<ToolCallback> diagnosticTools;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    private static LogQueryResponse CACHED_RESPONSE;
+
+    @BeforeEach
+    void setupMock() throws Exception {
+        if (CACHED_RESPONSE == null) {
+            CACHED_RESPONSE = objectMapper.readValue(TEST_SYSTEM_LEVEL_LOG, LogQueryResponse.class);
+        }
+
+        BDDMockito.given(mockEventLogQueryService.queryEventLogs(any(), any()))
+                .willReturn(CACHED_RESPONSE);
+    }
 
     @Test
     void testRealAiCall_AdminCheckIntrusion() throws Exception {
@@ -129,7 +154,8 @@ public class TestLogAnalyseGraph {
                 thinkChatClient,
                 guestProvider,
                 promptLoader,
-                diagnosticTools
+                diagnosticTools,
+                objectMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
@@ -160,7 +186,8 @@ public class TestLogAnalyseGraph {
                 thinkChatClient,
                 guestProvider,
                 promptLoader,
-                diagnosticTools
+                diagnosticTools,
+                objectMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
@@ -181,7 +208,8 @@ public class TestLogAnalyseGraph {
                 thinkChatClient,
                 userProvider,
                 promptLoader,
-                diagnosticTools
+                diagnosticTools,
+                objectMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
@@ -204,5 +232,87 @@ public class TestLogAnalyseGraph {
 
         return value.get().toString();
     }
+
+    private static final String TEST_SYSTEM_LEVEL_LOG = """
+            {
+                "userContext": {
+                    "isAdmin": false,
+                    "isReader": true
+                },
+                "hasMore": true,
+                "entries": [
+                    {
+                        "Id": 1801,
+                        "LevelDisplayName": "Error",
+                        "ProviderName": "Microsoft-Windows-TPM-WMI",
+                        "TimeCreated": "2025-12-25 09:51:36",
+                        "Message": "Secure Boot CA/keys need to be updated. This device signature information is included here.\\r\\nDeviceAttributes: FirmwareVersion:[REDACTED];OEMManufacturerName:[OEM_NAME];OEMModelSKU:[OEM_MODEL_INFO];OSArchitecture:amd64;\\r\\nBucketId: [REDACTED_BUCKET_ID]\\r\\nBucketConfidenceLevel: \\r\\nUpdateType: 0\\r\\nHResult: The operation completed successfully."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:49:32",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 激活 permission for the COM Server application with CLSID \\r\\n{2593F8B9-4EAF-457C-B68A-50F6B8EA6B54}\\r\\n and APPID \\r\\n{15C20B67-12E7-4BB6-92BB-7AFF07997402}\\r\\n to the user [DOMAIN]\\\\[USER] SID (S-1-5-21-[REDACTED]-1001) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:49:29",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 启动 permission for the COM Server application with CLSID \\r\\nWindows.SecurityCenter.SecurityAppBroker\\r\\n and APPID \\r\\n不可用\\r\\n to the user NT AUTHORITY\\\\SYSTEM SID (S-1-5-18) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:49:29",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 启动 permission for the COM Server application with CLSID \\r\\nWindows.SecurityCenter.WscBrokerManager\\r\\n and APPID \\r\\n不可用\\r\\n to the user NT AUTHORITY\\\\SYSTEM SID (S-1-5-18) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 7000,
+                        "LevelDisplayName": "Error",
+                        "ProviderName": "Service Control Manager",
+                        "TimeCreated": "2025-12-25 09:49:03",
+                        "Message": "The Google 更新服务 (gupdate) service failed to start due to the following error: \\r\\nThe service did not respond to the start or control request in a timely fashion."
+                    },
+                    {
+                        "Id": 7009,
+                        "LevelDisplayName": "Error",
+                        "ProviderName": "Service Control Manager",
+                        "TimeCreated": "2025-12-25 09:49:03",
+                        "Message": "A timeout was reached (120000 milliseconds) while waiting for the Google 更新服务 (gupdate) service to connect."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:48:56",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 激活 permission for the COM Server application with CLSID \\r\\n{2593F8B9-4EAF-457C-B68A-50F6B8EA6B54}\\r\\n and APPID \\r\\n{15C20B67-12E7-4BB6-92BB-7AFF07997402}\\r\\n to the user [DOMAIN]\\\\[USER] SID (S-1-5-21-[REDACTED]-1001) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:48:30",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 启动 permission for the COM Server application with CLSID \\r\\nWindows.SecurityCenter.WscCloudBackupProvider\\r\\n and APPID \\r\\n不可用\\r\\n to the user [DOMAIN]\\\\[USER] SID (S-1-5-21-[REDACTED]-1001) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:48:21",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 激活 permission for the COM Server application with CLSID \\r\\n{2593F8B9-4EAF-457C-B68A-50F6B8EA6B54}\\r\\n and APPID \\r\\n{15C20B67-12E7-4BB6-92BB-7AFF07997402}\\r\\n to the user [DOMAIN]\\\\[USER] SID (S-1-5-21-[REDACTED]-1001) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    },
+                    {
+                        "Id": 10016,
+                        "LevelDisplayName": "Warning",
+                        "ProviderName": "Microsoft-Windows-DistributedCOM",
+                        "TimeCreated": "2025-12-25 09:48:20",
+                        "Message": "The 应用程序-特定 permission settings do not grant 本地 启动 permission for the COM Server application with CLSID \\r\\nWindows.SecurityCenter.WscCloudBackupProvider\\r\\n and APPID \\r\\n不可用\\r\\n to the user [DOMAIN]\\\\[USER] SID (S-1-5-21-[REDACTED]-1001) from address LocalHost (使用 LRPC) running in the application container 不可用 SID (不可用). This security permission can be modified using the Component Services administrative tool."
+                    }
+                ]
+            }
+            """;
 
 }

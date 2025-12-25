@@ -15,8 +15,12 @@ import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
+import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -44,7 +48,10 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     public static final String KEY_EXECUTION_PLAN = "execution-plan";
 
     @GraphKey
-    private static final String KEY_EVENT_LOG_ENTRIES = "event-log-entries";
+    public static final String KEY_EXECUTOR_INSTRUCTION = "executor-instruction";
+
+    @GraphKey(strategy = AppendStrategy.class)
+    private static final String KEY_EVENT_LOG_RESULT = "event-log-result";
 
     @GraphKey
     public static final String KEY_ANALYSE_REPORT = "analyse-report";
@@ -58,7 +65,17 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     @GraphNode("execution-planner")
     private final AsyncNodeActionWithConfig executionPlanner;
 
+    @GraphNode("plan-executor")
+    private final AsyncNodeActionWithConfig planExecutor;
+
     record PrivilegeCheckerQuery(String query, UserContext userContext) {}
+
+    public record PlannerResponse(
+            @JsonProperty(required = true) String executionPlan,
+            @JsonProperty(required = true) String executorInstruction
+    ) {}
+
+    private static final PlannerResponse EMPTY_RESPONSE = new PlannerResponse(null, null);
 
     /** 在此构造器中初始化各个节点 */
     public LogAnalyseGraphComposer(
@@ -66,7 +83,8 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             @Qualifier("thinkChatClient") ChatClient thinkChatClient,
             IUserContextProvider userContextProvider,
             PromptLoader promptLoader,
-            @DiagnosticTool List<ToolCallback> diagnosticTools
+            @DiagnosticTool List<ToolCallback> diagnosticTools,
+            ObjectMapper objectMapper
     ) {
 
         this.privilegeCheckNode = (state, config) -> {
@@ -124,8 +142,12 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             assert query.isPresent();
             String queryString = query.get().toString();
 
+            BeanOutputConverter<PlannerResponse> converter = new BeanOutputConverter<>(PlannerResponse.class);
+
             ChatResponse response = thinkChatClient.prompt()
-                    .system(promptLoader.loadPrompt(PromptIdentifier.LOG_ANALYSE_EXECUTION_PLANNER_SYS_PROMPT))
+                    .system(promptLoader.render(PromptIdentifier.LOG_ANALYSE_EXECUTION_PLANNER_SYS_PROMPT,
+                            Map.of("format", converter.getFormat())
+                    ))
                     .user(JToon.encode(Map.of(
                             "query", queryString,
                             "available_tools", diagnosticTools.stream().map(ToolCallback::getToolDefinition).map(ToolDefinition::description).toList()
@@ -133,11 +155,39 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
                     .call()
                     .chatResponse();
 
-            String output = ModelChatUtils.extractContent(response, "计划生成服务响应异常");
+            PlannerResponse plannerResponse = ModelChatUtils.extractOutput(response, EMPTY_RESPONSE, objectMapper);
 
-            return CompletableFuture.completedFuture(
-                    Map.of(KEY_EXECUTION_PLAN, output)
-            );
+            if (plannerResponse.executionPlan() == null || plannerResponse.executionPlan().isBlank()) {
+                return CompletableFuture.completedFuture(
+                        Map.of(KEY_EXECUTION_PLAN, "ERROR")
+                );
+            }
+
+            return CompletableFuture.completedFuture(Map.of(
+                    KEY_EXECUTION_PLAN, plannerResponse.executionPlan(),
+                    KEY_EXECUTOR_INSTRUCTION, plannerResponse.executorInstruction()
+            ));
+        };
+
+        this.planExecutor = (state, config) -> {
+
+            Optional<Object> value = state.value(KEY_EXECUTION_PLAN);
+            assert value.isPresent();
+            String executionPlan = value.get().toString();
+
+            ChatResponse response = flashChatClient.prompt()
+                    .system(promptLoader.loadPrompt(PromptIdentifier.LOG_ANALYSE_PLAN_EXECUTOR_SYS_PROMPT))
+                    .user(executionPlan)
+                    .toolCallbacks(diagnosticTools)
+                    .call()
+                    .chatResponse();
+
+            String content = ModelChatUtils.extractContent(response, "");
+
+            return CompletableFuture.completedFuture(Map.of(
+                    KEY_EVENT_LOG_RESULT, content
+            ));
+
         };
 
     }
@@ -147,7 +197,8 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
         builder.addEdge(StateGraph.START, idOf(privilegeCheckNode));
         builder.addEdge(idOf(privilegeCheckNode), idOf(privilegeCheckResultHandleNode));
         builder.addEdge(idOf(privilegeCheckResultHandleNode), idOf(executionPlanner));
-        builder.addEdge(idOf(executionPlanner), StateGraph.END);
+        builder.addEdge(idOf(executionPlanner), idOf(planExecutor));
+        builder.addEdge(idOf(planExecutor), StateGraph.END);
     }
 
     @Override

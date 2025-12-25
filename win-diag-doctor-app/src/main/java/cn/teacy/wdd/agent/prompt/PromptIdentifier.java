@@ -13,6 +13,8 @@ public enum PromptIdentifier {
 
     LOG_ANALYSE_EXECUTION_PLANNER_SYS_PROMPT("logAnalyseExecutionPlannerSysPrompt", "You are an expert in Windows event log analysis. Based on the user's query, create a detailed execution plan outlining the steps to analyze the relevant event logs to diagnose the issue."),
 
+    LOG_ANALYSE_PLAN_EXECUTOR_SYS_PROMPT("logAnalysePlanExecutorSysPrompt", "You are a Windows event log analysis expert. Follow the provided execution plan to analyze the event logs and extract relevant information to diagnose the user's issue."),
+
     ;
 
     PromptIdentifier(String identifier, String defaultPrompt) {
