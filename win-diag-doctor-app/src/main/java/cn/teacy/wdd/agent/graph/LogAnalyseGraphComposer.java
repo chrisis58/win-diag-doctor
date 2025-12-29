@@ -11,15 +11,22 @@ import cn.teacy.wdd.agent.utils.ModelChatUtils;
 import cn.teacy.wdd.common.entity.UserContext;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
+import com.alibaba.cloud.ai.graph.action.Command;
 import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
+import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -54,6 +61,9 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     private static final String KEY_EVENT_LOG_RESULT = "event-log-result";
 
     @GraphKey
+    private static final String KEY_ITERATION_COUNT = "iteration-count";
+
+    @GraphKey
     public static final String KEY_ANALYSE_REPORT = "analyse-report";
 
     @GraphNode("privilege-checker")
@@ -68,12 +78,37 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     @GraphNode("plan-executor")
     private final AsyncNodeActionWithConfig planExecutor;
 
+    @GraphNode("analyst")
+    private final AsyncNodeActionWithConfig analyst;
+
     record PrivilegeCheckerQuery(String query, UserContext userContext) {}
 
     public record PlannerResponse(
             @JsonProperty(required = true) String executionPlan,
             @JsonProperty(required = true) String executorInstruction
     ) {}
+
+    record ExecutionRecord(
+            @JacksonXmlProperty(localName = "action") String action,
+            @JacksonXmlProperty(localName = "result") String result
+    ) {}
+
+    @JacksonXmlRootElement(localName = "transcript")
+    record TranscriptWrapper(
+            @JacksonXmlElementWrapper(useWrapping = false)
+            @JacksonXmlProperty(localName = "step")
+            List<ExecutionRecord> records,
+
+            @JacksonXmlProperty(isAttribute = true)
+            int interactionCount
+    ) {}
+
+    record AnalyseReport(
+            @JsonProperty(required = true) String report,
+            @JsonProperty() String newInstruction
+    ) {}
+
+    private static final AnalyseReport EMPTY_REPORT = new AnalyseReport("", null);
 
     private static final PlannerResponse EMPTY_RESPONSE = new PlannerResponse(null, null);
 
@@ -84,7 +119,8 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             IUserContextProvider userContextProvider,
             PromptLoader promptLoader,
             @DiagnosticTool List<ToolCallback> diagnosticTools,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            XmlMapper xmlMapper
     ) {
 
         this.privilegeCheckNode = (state, config) -> {
@@ -171,23 +207,70 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
         this.planExecutor = (state, config) -> {
 
-            Optional<Object> value = state.value(KEY_EXECUTION_PLAN);
+            Optional<Object> value = state.value(KEY_EXECUTOR_INSTRUCTION);
             assert value.isPresent();
-            String executionPlan = value.get().toString();
+            String executionInstruction = value.get().toString();
 
             ChatResponse response = flashChatClient.prompt()
                     .system(promptLoader.loadPrompt(PromptIdentifier.LOG_ANALYSE_PLAN_EXECUTOR_SYS_PROMPT))
-                    .user(executionPlan)
+                    .user(executionInstruction)
                     .toolCallbacks(diagnosticTools)
                     .call()
                     .chatResponse();
 
-            String content = ModelChatUtils.extractContent(response, "");
+            String content = ModelChatUtils.extractContent(response, "ERROR");
 
             return CompletableFuture.completedFuture(Map.of(
-                    KEY_EVENT_LOG_RESULT, content
+                    KEY_EVENT_LOG_RESULT, new ExecutionRecord(executionInstruction, content),
+                    KEY_EXECUTOR_INSTRUCTION, ""
             ));
 
+        };
+
+        final PromptTemplate analystPrompt = new PromptTemplate("""
+                Query: {query}
+                Transcript:
+                {transcript}
+                """);
+
+        this.analyst = (state, config) -> {
+
+            int iterationCount = (int) state.value(KEY_ITERATION_COUNT).orElse(0);
+
+            assert state.value(KEY_EVENT_LOG_RESULT).isPresent();
+            List<ExecutionRecord> executionRecords = (List<ExecutionRecord>) state.value(KEY_EVENT_LOG_RESULT).get();
+            TranscriptWrapper transcript = new TranscriptWrapper(executionRecords, iterationCount);
+
+            String transcriptString;
+            try {
+                transcriptString = xmlMapper.writeValueAsString(transcript);
+            } catch (JsonProcessingException e) {
+                transcriptString = "<transcript></transcript>";
+            }
+
+            assert state.value(KEY_QUERY).isPresent();
+            String queryString = state.value(KEY_QUERY).get().toString();
+
+
+            BeanOutputConverter<AnalyseReport> converter = new BeanOutputConverter<>(AnalyseReport.class);
+
+            ChatResponse response = thinkChatClient.prompt()
+                    .system(promptLoader.render(PromptIdentifier.LOG_ANALYSE_ANALYST_SYS_PROMPT, Map.of(
+                            "format", converter.getFormat()
+                    )))
+                    .user(analystPrompt.render(Map.of(
+                            "query", queryString,
+                            "transcript", transcriptString
+                    ))).call()
+                    .chatResponse();
+
+            AnalyseReport report = ModelChatUtils.extractOutput(response, EMPTY_REPORT, objectMapper);
+
+            return CompletableFuture.completedFuture(Map.of(
+                    KEY_ANALYSE_REPORT, report.report(),
+                    KEY_EXECUTOR_INSTRUCTION, report.newInstruction() != null ? report.newInstruction() : "",
+                    KEY_ITERATION_COUNT, iterationCount + 1
+            ));
         };
 
     }
@@ -198,7 +281,28 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
         builder.addEdge(idOf(privilegeCheckNode), idOf(privilegeCheckResultHandleNode));
         builder.addEdge(idOf(privilegeCheckResultHandleNode), idOf(executionPlanner));
         builder.addEdge(idOf(executionPlanner), idOf(planExecutor));
-        builder.addEdge(idOf(planExecutor), StateGraph.END);
+        builder.addEdge(idOf(planExecutor), idOf(analyst));
+
+        builder.addConditionalEdges(idOf(analyst), (OverAllState state, RunnableConfig config) -> {
+                int iterationCount = (int) state.value(KEY_ITERATION_COUNT).orElse(0);
+                String newInstruction = state.value(KEY_EXECUTOR_INSTRUCTION).orElse("").toString();
+
+                String next;
+
+                if (iterationCount < 3 && newInstruction != null && !newInstruction.isBlank()) {
+                    next = "true";
+                } else {
+                    next = "false";
+                }
+
+                return CompletableFuture.completedFuture(new Command(next, Map.of(
+                        KEY_ITERATION_COUNT, iterationCount + 1
+                )));
+            },
+            Map.of(
+                    "true", idOf(planExecutor),
+                    "false", StateGraph.END
+            ));
     }
 
     @Override

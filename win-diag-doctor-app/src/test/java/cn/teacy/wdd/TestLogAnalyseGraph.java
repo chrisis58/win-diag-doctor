@@ -12,6 +12,7 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
@@ -52,6 +53,9 @@ public class TestLogAnalyseGraph {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private XmlMapper xmlMapper;
 
     private static LogQueryResponse CACHED_RESPONSE;
 
@@ -155,7 +159,8 @@ public class TestLogAnalyseGraph {
                 guestProvider,
                 promptLoader,
                 diagnosticTools,
-                objectMapper
+                objectMapper,
+                xmlMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
@@ -187,7 +192,8 @@ public class TestLogAnalyseGraph {
                 guestProvider,
                 promptLoader,
                 diagnosticTools,
-                objectMapper
+                objectMapper,
+                xmlMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
@@ -209,7 +215,8 @@ public class TestLogAnalyseGraph {
                 userProvider,
                 promptLoader,
                 diagnosticTools,
-                objectMapper
+                objectMapper,
+                xmlMapper
         );
 
         CompiledGraph graph = composer.logAnalyseGraph();
