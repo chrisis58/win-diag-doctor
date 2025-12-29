@@ -2,7 +2,7 @@ package cn.teacy.wdd.agent.graph;
 
 import cn.teacy.wdd.agent.common.GraphKey;
 import cn.teacy.wdd.agent.common.GraphNode;
-import cn.teacy.wdd.agent.node.InterruptableNodeAction;
+import cn.teacy.wdd.agent.node.InterruptibleNodeAction;
 import cn.teacy.wdd.agent.prompt.PromptIdentifier;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
 import cn.teacy.wdd.agent.service.IUserContextProvider;
@@ -70,7 +70,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     private final AsyncNodeActionWithConfig privilegeCheckNode;
 
     @GraphNode("pre-check-result-handler")
-    private final InterruptableNodeAction privilegeCheckResultHandleNode;
+    private final InterruptibleNodeAction privilegeCheckResultHandleNode;
 
     @GraphNode("execution-planner")
     private final AsyncNodeActionWithConfig executionPlanner;

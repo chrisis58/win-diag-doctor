@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 @FunctionalInterface
-public interface InterruptableNodeAction extends InterruptableAction, AsyncNodeActionWithConfig {
+public interface InterruptibleNodeAction extends InterruptableAction, AsyncNodeActionWithConfig {
 
     @Override
     Optional<InterruptionMetadata> interrupt(String nodeId, OverAllState state, RunnableConfig config);
