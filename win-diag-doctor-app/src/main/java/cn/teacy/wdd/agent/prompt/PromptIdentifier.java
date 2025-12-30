@@ -17,6 +17,8 @@ public enum PromptIdentifier {
 
     LOG_ANALYSE_ANALYST_SYS_PROMPT("logAnalyseAnalystSysPrompt", "You are a Windows system diagnostic expert. Based on the results of the event log analysis, provide a comprehensive diagnosis of the user's issue along with actionable recommendations."),
 
+    LOG_ANALYSE_EXPERT_DESCRIPTION("logAnalyseExpertDescription", "An expert in analyzing Windows event logs to diagnose system issues and provide actionable recommendations.")
+
     ;
 
     PromptIdentifier(String identifier, String defaultPrompt) {

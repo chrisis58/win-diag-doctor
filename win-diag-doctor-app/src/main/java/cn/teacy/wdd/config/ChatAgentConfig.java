@@ -2,7 +2,7 @@ package cn.teacy.wdd.config;
 
 import cn.teacy.wdd.agent.prompt.PromptIdentifier;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
-import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
+import cn.teacy.wdd.agent.tools.annotations.LogAnalyseGraphTool;
 import cn.teacy.wdd.config.properties.WddProperties;
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
@@ -90,7 +90,7 @@ public class ChatAgentConfig {
     public AgentLoader agentLoader(
             PromptLoader promptLoader,
             ChatClient chatClient,
-            @DiagnosticTool List<ToolCallback> diagnosticToolCallbacks
+            @LogAnalyseGraphTool List<ToolCallback> diagnosticToolCallbacks
     ) {
 
         ReactAgent agent = ReactAgent.builder()

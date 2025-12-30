@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
+
 @Component
 public class LogAnalyseGraphComposer extends AbstractGraphComposer {
 
@@ -215,6 +217,7 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
                     .system(promptLoader.loadPrompt(PromptIdentifier.LOG_ANALYSE_PLAN_EXECUTOR_SYS_PROMPT))
                     .user(executionInstruction)
                     .toolCallbacks(diagnosticTools)
+                    .toolContext(Map.of(AGENT_CONFIG_CONTEXT_KEY, config))
                     .call()
                     .chatResponse();
 
