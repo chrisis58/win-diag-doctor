@@ -8,7 +8,8 @@
 
 2. `levels` (List<Enum>, 选填):
     - 筛选日志级别。
-    - **App/System**: 仅查 `Error`, `Warning`, `Critical`，除非必要请忽略 `Information` 以降噪。
+    - 缺省行为: 若留空 (Null/Empty)，则不过滤级别（即返回所有级别的日志）。
+    - **App/System**: 建议查询 `Error`, `Warning`, `Critical`，除非必要请忽略 `Information` 以降噪。
     - **Security**: 必须包含 `Information`，因为关键审核事件(如登录失败、提权)均属此级别。
 
 3. `startHoursAgo / endHoursAgo` (Integer, 选填):
