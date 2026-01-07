@@ -1,8 +1,6 @@
 package cn.teacy.wdd.agent.graph;
 
-import cn.teacy.wdd.agent.common.GraphKey;
-import cn.teacy.wdd.agent.common.GraphNode;
-import cn.teacy.wdd.agent.node.InterruptibleNodeAction;
+import cn.teacy.ai.annotation.*;
 import cn.teacy.wdd.agent.prompt.PromptIdentifier;
 import cn.teacy.wdd.agent.prompt.PromptLoader;
 import cn.teacy.wdd.agent.service.IUserContextProvider;
@@ -11,11 +9,9 @@ import cn.teacy.wdd.agent.utils.ModelChatUtils;
 import cn.teacy.wdd.common.entity.UserContext;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.alibaba.cloud.ai.graph.action.Command;
-import com.alibaba.cloud.ai.graph.action.InterruptionMetadata;
+import com.alibaba.cloud.ai.graph.action.EdgeAction;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
-import com.alibaba.cloud.ai.graph.exception.GraphStateException;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -32,8 +28,6 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.context.annotation.Bean;
-import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Map;
@@ -42,8 +36,8 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
-@Component
-public class LogAnalyseGraphComposer extends AbstractGraphComposer {
+@GraphComposer
+public class LogAnalyseGraphComposer {
 
     private final MemorySaver saver = new MemorySaver();
 
@@ -68,20 +62,35 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
     @GraphKey
     public static final String KEY_ANALYSE_REPORT = "analyse-report";
 
-    @GraphNode("privilege-checker")
-    private final AsyncNodeActionWithConfig privilegeCheckNode;
+    private static final String NODE_PRIVILEGE_CHECKER = "privilege-checker";
+    private static final String NODE_EXECUTION_PLANNER = "execution-planner";
+    private static final String NODE_PLAN_EXECUTOR = "plan-executor";
+    private static final String NODE_ANALYST = "analyst";
 
-    @GraphNode("pre-check-result-handler")
-    private final InterruptibleNodeAction privilegeCheckResultHandleNode;
+    @GraphNode(id = NODE_PRIVILEGE_CHECKER, isStart = true)
+    final AsyncNodeActionWithConfig privilegeCheckNode;
 
-    @GraphNode("execution-planner")
-    private final AsyncNodeActionWithConfig executionPlanner;
+    @ConditionalEdge(source = NODE_PRIVILEGE_CHECKER, mappings = {"pass", NODE_EXECUTION_PLANNER, "interrupt", StateGraph.END})
+    final EdgeAction privilegeCheckRouting;
 
-    @GraphNode("plan-executor")
-    private final AsyncNodeActionWithConfig planExecutor;
+    @GraphNode(id = NODE_EXECUTION_PLANNER, next = NODE_PLAN_EXECUTOR)
+    final AsyncNodeActionWithConfig executionPlanner;
 
-    @GraphNode("analyst")
-    private final AsyncNodeActionWithConfig analyst;
+    @GraphNode(id = NODE_PLAN_EXECUTOR, next = NODE_ANALYST)
+    final AsyncNodeActionWithConfig planExecutor;
+
+    @GraphNode(id = NODE_ANALYST)
+    final AsyncNodeActionWithConfig analyst;
+
+    @ConditionalEdge(source = NODE_ANALYST, mappings = {"end", StateGraph.END, "loop", NODE_PLAN_EXECUTOR})
+    final EdgeAction needLoopCondition;
+
+    @GraphCompileConfig
+    final CompileConfig config = CompileConfig.builder()
+                .saverConfig(SaverConfig.builder()
+                        .register(saver)
+                        .build())
+                .build();
 
     record PrivilegeCheckerQuery(String query, UserContext userContext) {}
 
@@ -153,25 +162,6 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             return CompletableFuture.completedFuture(
                     Map.of(KEY_PRIVILEGE_QUALIFIED, output)
             );
-        };
-
-        this.privilegeCheckResultHandleNode = (nodeId, state, config) -> {
-
-            Optional<Object> value = state.value(KEY_PRIVILEGE_QUALIFIED);
-
-            if (value.isPresent() && String.valueOf(Boolean.TRUE).equals(value.get())) {
-                // Privilege check passed
-                return Optional.empty();
-            }
-
-            InterruptionMetadata interruption = InterruptionMetadata.builder(nodeId, state)
-                    .addMetadata("message", value.isPresent()
-                            ? value.get().toString()
-                            : "Privilege check failed: insufficient permissions to perform log analysis.")
-                    .addMetadata("node", nodeId)
-                    .build();
-
-            return Optional.of(interruption);
         };
 
         this.executionPlanner = (state, config) -> {
@@ -276,50 +266,27 @@ public class LogAnalyseGraphComposer extends AbstractGraphComposer {
             ));
         };
 
-    }
+        privilegeCheckRouting = (OverAllState state) -> {
+            Optional<Object> value = state.value(KEY_PRIVILEGE_QUALIFIED);
 
-    @Override
-    protected void addEdges(StateGraph builder) throws GraphStateException {
-        builder.addEdge(StateGraph.START, idOf(privilegeCheckNode));
-        builder.addEdge(idOf(privilegeCheckNode), idOf(privilegeCheckResultHandleNode));
-        builder.addEdge(idOf(privilegeCheckResultHandleNode), idOf(executionPlanner));
-        builder.addEdge(idOf(executionPlanner), idOf(planExecutor));
-        builder.addEdge(idOf(planExecutor), idOf(analyst));
+            if (value.isPresent() && String.valueOf(Boolean.TRUE).equals(value.get())) {
+                // Privilege check passed
+                return "pass";
+            }
+            return "interrupt";
+        };
 
-        builder.addConditionalEdges(idOf(analyst), (OverAllState state, RunnableConfig config) -> {
-                int iterationCount = (int) state.value(KEY_ITERATION_COUNT).orElse(0);
-                String newInstruction = state.value(KEY_EXECUTOR_INSTRUCTION).orElse("").toString();
+        needLoopCondition = (OverAllState state) -> {
+            Optional<Object> instruction = state.value(KEY_EXECUTOR_INSTRUCTION);
 
-                String next;
+            int count = (int) state.value(KEY_ITERATION_COUNT).orElseThrow();
+            if (count >= 3) {
+                return "end";
+            }
 
-                if (iterationCount < 3 && newInstruction != null && !newInstruction.isBlank()) {
-                    next = "true";
-                } else {
-                    next = "false";
-                }
+            return instruction.isPresent() && !instruction.get().toString().isBlank() ? "loop" : "end";
+        };
 
-                return CompletableFuture.completedFuture(new Command(next, Map.of(
-                        KEY_ITERATION_COUNT, iterationCount + 1
-                )));
-            },
-            Map.of(
-                    "true", idOf(planExecutor),
-                    "false", StateGraph.END
-            ));
-    }
-
-    @Override
-    protected CompileConfig compileConfig() {
-        return CompileConfig.builder()
-                .saverConfig(SaverConfig.builder()
-                        .register(saver)
-                        .build())
-                .build();
-    }
-
-    @Bean
-    public CompiledGraph logAnalyseGraph() {
-        return compose();
     }
 
 }

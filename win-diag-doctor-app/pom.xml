@@ -92,6 +92,11 @@
             <artifactId>jackson-dataformat-xml</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>cn.teacy.ai</groupId>
+            <artifactId>saa-graph-composer</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>

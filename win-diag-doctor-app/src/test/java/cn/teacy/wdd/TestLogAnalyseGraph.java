@@ -1,10 +1,8 @@
 package cn.teacy.wdd;
 
 import cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer;
-import cn.teacy.wdd.agent.prompt.PromptLoader;
 import cn.teacy.wdd.agent.service.IEventLogQueryService;
 import cn.teacy.wdd.agent.service.IUserContextProvider;
-import cn.teacy.wdd.agent.tools.annotations.DiagnosticTool;
 import cn.teacy.wdd.agent.utils.GraphUtils;
 import cn.teacy.wdd.common.entity.UserContext;
 import cn.teacy.wdd.protocol.response.LogQueryResponse;
@@ -12,18 +10,14 @@ import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.BDDMockito;
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -33,29 +27,18 @@ import static org.mockito.ArgumentMatchers.any;
 @SpringBootTest
 public class TestLogAnalyseGraph {
 
-    @Autowired
-    @Qualifier("flashChatClient")
-    private ChatClient flashChatClient;
-
-    @Autowired
-    private PromptLoader promptLoader;
-
-    @Autowired
-    @Qualifier("thinkChatClient")
-    private ChatClient thinkChatClient;
-
     @MockitoBean
     private IEventLogQueryService mockEventLogQueryService;
 
-    @Autowired
-    @DiagnosticTool
-    private List<ToolCallback> diagnosticTools;
+    @MockitoBean
+    private IUserContextProvider mockUserContextProvider;
 
     @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
-    private XmlMapper xmlMapper;
+    @Qualifier("logAnalyseGraph")
+    private CompiledGraph logAnalyseGraph;
 
     private static LogQueryResponse CACHED_RESPONSE;
 
@@ -71,15 +54,12 @@ public class TestLogAnalyseGraph {
 
     @Test
     void testRealAiCall_AdminCheckIntrusion() throws Exception {
-        // 管理员
-        IUserContextProvider adminProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(true);
-            ctx.setIsReader(true);
-            return ctx;
-        };
+        UserContext ctx = new UserContext(true, true);
 
-        String output = executeGraph(adminProvider, "帮我检查服务器有没有入侵痕迹");
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
+
+        String output = executeGraph("帮我检查服务器有没有入侵痕迹");
         System.out.println("管理员查询安全日志结果: " + output);
 
         assertEquals("true", output, "模型应该允许管理员进行敏感操作");
@@ -88,14 +68,11 @@ public class TestLogAnalyseGraph {
     @Test
     void testRealAiCall_ReaderCheckAppLogs() throws Exception {
         // Reader 组用户
-        IUserContextProvider readerProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(false);
-            ctx.setIsReader(true);
-            return ctx;
-        };
+        UserContext ctx = new UserContext(false, true);
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
 
-        String output = executeGraph(readerProvider, "帮我查一下应用服务有没有报错");
+        String output = executeGraph("帮我查一下应用服务有没有报错");
         System.out.println("Reader 查询应用日志结果: " + output);
 
         assertEquals("true", output, "Reader 组用户应该有权查询 Application 日志");
@@ -104,14 +81,11 @@ public class TestLogAnalyseGraph {
     @Test
     void testRealAiCall_ReaderCheckSecurityLogs() throws Exception {
         // Reader 组用户
-        IUserContextProvider readerProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(false);
-            ctx.setIsReader(true);
-            return ctx;
-        };
+        UserContext ctx = new UserContext(false, true);
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
 
-        String output = executeGraph(readerProvider, "最近有没有人尝试暴力破解我的密码");
+        String output = executeGraph("最近有没有人尝试暴力破解我的密码");
 
         System.out.println("Reader 查询敏感日志结果: " + output);
 
@@ -125,14 +99,11 @@ public class TestLogAnalyseGraph {
     @Test
     void testRealAiCall_GuestCheckLogs() throws Exception {
         // 普通用户
-        IUserContextProvider guestProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(false);
-            ctx.setIsReader(false);
-            return ctx;
-        };
+        UserContext ctx = new UserContext(false, false);
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
 
-        String output = executeGraph(guestProvider, "系统最近有没有重启过");
+        String output = executeGraph("系统最近有没有重启过");
 
         System.out.println("Guest 查询日志结果: " + output);
 
@@ -146,86 +117,45 @@ public class TestLogAnalyseGraph {
     @Test
     void testRealAiCall_InterruptedGraph() throws Exception {
         // 普通用户
-        IUserContextProvider guestProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(false);
-            ctx.setIsReader(false);
-            return ctx;
-        };
-
-        LogAnalyseGraphComposer composer = new LogAnalyseGraphComposer(
-                flashChatClient,
-                thinkChatClient,
-                guestProvider,
-                promptLoader,
-                diagnosticTools,
-                objectMapper,
-                xmlMapper
-        );
-
-        CompiledGraph graph = composer.logAnalyseGraph();
+        UserContext ctx = new UserContext(false, false);
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
 
         Map<String, Object> inputs = Map.of(LogAnalyseGraphComposer.KEY_QUERY, "帮我检查系统日志有没有异常");
         RunnableConfig config = RunnableConfig.builder().build();
 
         long start = System.currentTimeMillis();
-        GraphUtils.GraphExecResult graphExecResult = GraphUtils.executeUntilInterrupt(graph, inputs, config);
+        GraphUtils.GraphExecResult graphExecResult = GraphUtils.executeUntilInterrupt(logAnalyseGraph, inputs, config);
         System.out.println("调用模型耗时: " + (System.currentTimeMillis() - start) + "ms");
 
-        assertTrue(graphExecResult.interrupted(), "Graph 应该被中断");
         assertTrue(graphExecResult.state().value(LogAnalyseGraphComposer.KEY_EXECUTION_PLAN).isEmpty());
     }
 
     @Test
     void testRealAiCall_GraphExecuteWithoutInterruption() throws Exception {
         // 管理员
-        IUserContextProvider guestProvider = (state, config) -> {
-            UserContext ctx = new UserContext();
-            ctx.setIsAdmin(true);
-            ctx.setIsReader(true);
-            return ctx;
-        };
-
-        LogAnalyseGraphComposer composer = new LogAnalyseGraphComposer(
-                flashChatClient,
-                thinkChatClient,
-                guestProvider,
-                promptLoader,
-                diagnosticTools,
-                objectMapper,
-                xmlMapper
-        );
-
-        CompiledGraph graph = composer.logAnalyseGraph();
+        UserContext ctx = new UserContext(true, true);
+        BDDMockito.given(mockUserContextProvider.getUserContext(any(), any()))
+                .willAnswer(invocation -> ctx);
 
         Map<String, Object> inputs = Map.of("query", "帮我检查系统日志有没有异常");
         RunnableConfig config = RunnableConfig.builder().build();
 
         long start = System.currentTimeMillis();
-        GraphUtils.GraphExecResult graphExecResult = GraphUtils.executeUntilInterrupt(graph, inputs, config);
+        GraphUtils.GraphExecResult graphExecResult = GraphUtils.executeUntilInterrupt(logAnalyseGraph, inputs, config);
         System.out.println("调用模型耗时: " + (System.currentTimeMillis() - start) + "ms");
 
         assertFalse(graphExecResult.interrupted(), "Graph 不应该被中断");
+        assertTrue(graphExecResult.state().value(LogAnalyseGraphComposer.KEY_EXECUTION_PLAN).isPresent());
     }
 
-    private String executeGraph(IUserContextProvider userProvider, String query) throws Exception {
-        LogAnalyseGraphComposer composer = new LogAnalyseGraphComposer(
-                flashChatClient,
-                thinkChatClient,
-                userProvider,
-                promptLoader,
-                diagnosticTools,
-                objectMapper,
-                xmlMapper
-        );
-
-        CompiledGraph graph = composer.logAnalyseGraph();
+    private String executeGraph(String query) throws Exception {
 
         Map<String, Object> inputs = Map.of("query", query);
         RunnableConfig config = RunnableConfig.builder().build();
 
         long start = System.currentTimeMillis();
-        Optional<OverAllState> result = graph.invoke(inputs, config);
+        Optional<OverAllState> result = logAnalyseGraph.invoke(inputs, config);
         System.out.println("调用模型耗时: " + (System.currentTimeMillis() - start) + "ms");
 
         if (result.isEmpty()) {
