@@ -44,7 +44,7 @@ public class LogAnalyseGraphToolConfig {
 
                         OverAllState state = result.result().state();
                         return (String) state.value(LogAnalyseGraphComposer.KEY_ANALYSE_REPORT).orElseGet(() ->
-                            state.value(LogAnalyseGraphComposer.KEY_PRIVILEGE_QUALIFIED).orElse("")
+                            "Privilege Not Qualified: " + state.value(LogAnalyseGraphComposer.KEY_PRIVILEGE_QUALIFIED).orElse("")
                         );
 
                     } catch (Exception e) {
