@@ -48,6 +48,7 @@
         <spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 
         <jtoon.version>0.1.2</jtoon.version>
+        <graph-composer.version>0.2.0</graph-composer.version>
     </properties>
 
     <dependencyManagement>
@@ -90,6 +91,12 @@
                 <groupId>com.alibaba.cloud.ai</groupId>
                 <artifactId>spring-ai-alibaba-starter-dashscope</artifactId>
                 <version>${spring-ai-alibaba.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>cn.teacy.ai</groupId>
+                <artifactId>saa-graph-composer</artifactId>
+                <version>0.1.0</version>
             </dependency>
 
         </dependencies>
