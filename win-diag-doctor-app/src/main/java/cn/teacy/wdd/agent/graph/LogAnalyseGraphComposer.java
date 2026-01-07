@@ -45,7 +45,7 @@ public class LogAnalyseGraphComposer {
     public static final String KEY_QUERY = "query";
 
     @GraphKey
-    private static final String KEY_PRIVILEGE_QUALIFIED = "privilege-qualified";
+    public static final String KEY_PRIVILEGE_QUALIFIED = "privilege-qualified";
 
     @GraphKey
     public static final String KEY_EXECUTION_PLAN = "execution-plan";

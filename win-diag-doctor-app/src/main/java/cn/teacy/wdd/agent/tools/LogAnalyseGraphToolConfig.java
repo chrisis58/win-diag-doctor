@@ -43,7 +43,9 @@ public class LogAnalyseGraphToolConfig {
                         LogAnalyseGraphService.ExecResult result = logAnalyseGraphService.execute(probeId, query);
 
                         OverAllState state = result.result().state();
-                        return (String) state.value(LogAnalyseGraphComposer.KEY_ANALYSE_REPORT).orElse("");
+                        return (String) state.value(LogAnalyseGraphComposer.KEY_ANALYSE_REPORT).orElseGet(() ->
+                            state.value(LogAnalyseGraphComposer.KEY_PRIVILEGE_QUALIFIED).orElse("")
+                        );
 
                     } catch (Exception e) {
                         return "工作流执行失败: " + e.getMessage();
