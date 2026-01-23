@@ -36,7 +36,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
-@GraphComposer
+@GraphComposer(description = "Workflow to analyze logs based on user query")
 public class LogAnalyseGraphComposer {
 
     private final MemorySaver saver = new MemorySaver();
@@ -67,19 +67,19 @@ public class LogAnalyseGraphComposer {
     private static final String NODE_PLAN_EXECUTOR = "plan-executor";
     private static final String NODE_ANALYST = "analyst";
 
-    @GraphNode(id = NODE_PRIVILEGE_CHECKER, isStart = true)
+    @GraphNode(id = NODE_PRIVILEGE_CHECKER, isStart = true, description = "Check if the user has privilege to perform log analysis")
     final AsyncNodeActionWithConfig privilegeCheckNode;
 
     @ConditionalEdge(source = NODE_PRIVILEGE_CHECKER, mappings = {"pass", NODE_EXECUTION_PLANNER, "interrupt", StateGraph.END})
     final EdgeAction privilegeCheckRouting;
 
-    @GraphNode(id = NODE_EXECUTION_PLANNER, next = NODE_PLAN_EXECUTOR)
+    @GraphNode(id = NODE_EXECUTION_PLANNER, next = NODE_PLAN_EXECUTOR, description = "Plan the execution steps for log analysis")
     final AsyncNodeActionWithConfig executionPlanner;
 
-    @GraphNode(id = NODE_PLAN_EXECUTOR, next = NODE_ANALYST)
+    @GraphNode(id = NODE_PLAN_EXECUTOR, next = NODE_ANALYST, description = "Follow the instruction to read and digest the log data")
     final AsyncNodeActionWithConfig planExecutor;
 
-    @GraphNode(id = NODE_ANALYST)
+    @GraphNode(id = NODE_ANALYST, description = "Analyze the execution transcript and generate a report, loop back if context is insufficient")
     final AsyncNodeActionWithConfig analyst;
 
     @ConditionalEdge(source = NODE_ANALYST, mappings = {"end", StateGraph.END, "loop", NODE_PLAN_EXECUTOR})
