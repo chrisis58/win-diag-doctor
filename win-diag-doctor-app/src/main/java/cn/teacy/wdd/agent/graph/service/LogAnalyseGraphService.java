@@ -1,10 +1,10 @@
 package cn.teacy.wdd.agent.graph.service;
 
+import cn.teacy.ai.annotation.CompiledFrom;
 import cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer;
 import cn.teacy.wdd.agent.utils.GraphUtils;
 import com.alibaba.cloud.ai.graph.CompiledGraph;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -16,7 +16,7 @@ public class LogAnalyseGraphService {
     private final CompiledGraph logAnalyseGraph;
 
     public LogAnalyseGraphService(
-            @Qualifier("logAnalyseGraph") CompiledGraph logAnalyseGraph
+            @CompiledFrom(LogAnalyseGraphComposer.class) CompiledGraph logAnalyseGraph
     ) {
         this.logAnalyseGraph = logAnalyseGraph;
     }

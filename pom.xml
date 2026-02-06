@@ -48,7 +48,7 @@
         <spring-ai-alibaba.version>1.1.0.0-M4</spring-ai-alibaba.version>
 
         <jtoon.version>0.1.2</jtoon.version>
-        <graph-composer.version>0.2.2</graph-composer.version>
+        <graph-composer.version>0.3.1</graph-composer.version>
     </properties>
 
     <dependencyManagement>
