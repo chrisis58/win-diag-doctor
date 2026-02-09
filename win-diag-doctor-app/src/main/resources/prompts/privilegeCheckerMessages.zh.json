@@ -1,0 +1,70 @@
+[
+  {
+    "text": "userContext:\n  isAdmin: false\n  isReader: true\nquery: 查应用报错\n",
+    "messageType": "USER",
+    "metadata": {
+      "messageType": "USER"
+    },
+    "media": []
+  },
+  {
+    "text": "true",
+    "messageType": "ASSISTANT",
+    "metadata": {
+      "messageType": "ASSISTANT"
+    },
+    "toolCalls": [],
+    "media": []
+  },
+  {
+    "text": "userContext:\n  isAdmin: false\n  isReader: true\nquery: 查暴力破解\n",
+    "messageType": "USER",
+    "metadata": {
+      "messageType": "USER"
+    },
+    "media": []
+  },
+  {
+    "text": "查询暴力破解需访问 Security 日志，当前权限不足。",
+    "messageType": "ASSISTANT",
+    "metadata": {
+      "messageType": "ASSISTANT"
+    },
+    "toolCalls": [],
+    "media": []
+  },
+  {
+    "text": "userContext:\n  isAdmin: false\n  isReader: false\nquery: 查报错\n",
+    "messageType": "USER",
+    "metadata": {
+      "messageType": "USER"
+    },
+    "media": []
+  },
+  {
+    "text": "您的账户未加入 Event Log Readers 组，无法查看日志。",
+    "messageType": "ASSISTANT",
+    "metadata": {
+      "messageType": "ASSISTANT"
+    },
+    "toolCalls": [],
+    "media": []
+  },
+  {
+    "text": "userContext:\n  isAdmin: true\n  isReader: false\nquery: 查入侵\n",
+    "messageType": "USER",
+    "metadata": {
+      "messageType": "USER"
+    },
+    "media": []
+  },
+  {
+    "text": "true",
+    "messageType": "ASSISTANT",
+    "metadata": {
+      "messageType": "ASSISTANT"
+    },
+    "toolCalls": [],
+    "media": []
+  }
+]

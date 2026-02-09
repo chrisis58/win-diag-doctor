@@ -15,12 +15,14 @@ import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
 import com.alibaba.cloud.ai.graph.state.strategy.AppendStrategy;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement;
 import com.felipestanzani.jtoon.JToon;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -29,6 +31,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.ai.chat.client.ChatClient;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -147,7 +150,17 @@ public class LogAnalyseGraphComposer {
 
             UserContext userContext = userContextProvider.getUserContext(state, config);
 
+            String messagesString = promptLoader.read(PromptIdentifier.PRIVILEGE_CHECKER_MESSAGES);
+            List<Message> messages = Collections.emptyList();
+            try {
+                messages = objectMapper.readValue(messagesString, new TypeReference<>() {
+                });
+            } catch (JsonProcessingException e) {
+                // pass
+            }
+
             ChatResponse response = flashChatClient.prompt()
+                    .messages(messages)
                     .system(promptLoader.loadPrompt(PromptIdentifier.PRIVILEGE_CHECKER_SYS_PROMPT))
                     .user(JToon.encode(new PrivilegeCheckerQuery(queryString, userContext)))
                     .call()

@@ -11,6 +11,8 @@ public enum PromptIdentifier {
 
     PRIVILEGE_CHECKER_SYS_PROMPT("privilegeCheckerSysPrompt", "You are a privilege escalation vulnerability detection expert. Analyze the provided system information to identify potential privilege escalation vulnerabilities and suggest remediation steps."),
 
+    PRIVILEGE_CHECKER_MESSAGES("privilegeCheckerMessages", "[]", "json"),
+
     LOG_ANALYSE_EXECUTION_PLANNER_SYS_PROMPT("logAnalyseExecutionPlannerSysPrompt", "You are an expert in Windows event log analysis. Based on the user's query, create a detailed execution plan outlining the steps to analyze the relevant event logs to diagnose the issue."),
 
     LOG_ANALYSE_PLAN_EXECUTOR_SYS_PROMPT("logAnalysePlanExecutorSysPrompt", "You are a Windows event log analysis expert. Follow the provided execution plan to analyze the event logs and extract relevant information to diagnose the user's issue."),
@@ -24,9 +26,17 @@ public enum PromptIdentifier {
     PromptIdentifier(String identifier, String defaultPrompt) {
         this.identifier = identifier;
         this.defaultPrompt = defaultPrompt;
+        this.extension = "md";
+    }
+
+    PromptIdentifier(String identifier, String defaultPrompt, String extension) {
+        this.identifier = identifier;
+        this.defaultPrompt = defaultPrompt;
+        this.extension = extension;
     }
 
     private final String identifier;
     private final String defaultPrompt;
+    private final String extension;
 
 }

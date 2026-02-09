@@ -4,7 +4,7 @@ import cn.teacy.wdd.config.interceptor.ProbeContextInterceptor;
 import cn.teacy.wdd.config.interceptor.TaskResultAuthInterceptor;
 import cn.teacy.wdd.protocol.WsMessageMapper;
 import cn.teacy.wdd.protocol.WsProtocolHandlerRegistry;
-import cn.teacy.wdd.support.ProbeContext;
+import cn.teacy.wdd.support.*;
 import com.alibaba.cloud.ai.agent.studio.controller.AgentController;
 import com.alibaba.cloud.ai.agent.studio.controller.ThreadController;
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
@@ -14,6 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -58,7 +62,12 @@ public class GeneralConfig implements WebMvcConfigurer {
     @Bean
     @Primary
     public ObjectMapper jacksonObjectMapper(Jackson2ObjectMapperBuilder builder) {
-        return builder.createXmlMapper(false).build();
+        return builder.createXmlMapper(false)
+                .mixIn(Message.class, MessageMixIn.class)
+                .mixIn(UserMessage.class, UserMessageMixIn.class)
+                .mixIn(AssistantMessage.class, AssistantMessageMixIn.class)
+                .mixIn(SystemMessage.class, SystemMessageMinIn.class)
+                .build();
     }
 
     @Bean
