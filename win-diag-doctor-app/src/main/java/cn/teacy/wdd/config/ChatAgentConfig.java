@@ -1,21 +1,20 @@
 package cn.teacy.wdd.config;
 
-import cn.teacy.wdd.agent.prompt.PromptIdentifier;
-import cn.teacy.wdd.agent.prompt.PromptLoader;
-import cn.teacy.wdd.agent.tools.annotations.LogAnalyseGraphTool;
+import cn.teacy.ai.annotation.CompiledFrom;
+import cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer;
 import cn.teacy.wdd.config.properties.WddProperties;
 import com.alibaba.cloud.ai.agent.studio.loader.AgentLoader;
+import com.alibaba.cloud.ai.graph.CompiledGraph;
+import com.alibaba.cloud.ai.graph.StateGraph;
 import com.alibaba.cloud.ai.graph.agent.BaseAgent;
-import com.alibaba.cloud.ai.graph.agent.ReactAgent;
-import com.alibaba.cloud.ai.graph.agent.interceptor.toolerror.ToolErrorInterceptor;
-import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
+import com.alibaba.cloud.ai.graph.internal.node.Node;
+import com.alibaba.cloud.ai.graph.internal.node.SubCompiledGraphNode;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -88,19 +87,27 @@ public class ChatAgentConfig {
     @Bean
     @Primary
     public AgentLoader agentLoader(
-            PromptLoader promptLoader,
-            ChatClient chatClient,
-            @LogAnalyseGraphTool List<ToolCallback> diagnosticToolCallbacks
+            @CompiledFrom(LogAnalyseGraphComposer.class) CompiledGraph logAnalyseGraph
     ) {
+        BaseAgent agent = new BaseAgent(
+                "wdd-agent",
+                "Agent for Win Diagnostic Doctor",
+                false,
+                false,
+                LogAnalyseGraphComposer.KEY_ANALYSE_REPORT,
+                null
+        ) {
 
-        ReactAgent agent = ReactAgent.builder()
-                .systemPrompt(promptLoader.loadPrompt(PromptIdentifier.CHAT_AGENT_SYS_PROMPT))
-                .chatClient(chatClient)
-                .tools(diagnosticToolCallbacks)
-                .interceptors(new ToolErrorInterceptor())
-                .saver(new MemorySaver())
-                .name("wdd-agent")
-                .build();
+            @Override
+            public Node asNode(boolean includeContents, boolean returnReasoningContents, String outputKeyToParent) {
+                return new SubCompiledGraphNode("", logAnalyseGraph);
+            }
+
+            @Override
+            protected StateGraph initGraph() {
+                return logAnalyseGraph.stateGraph;
+            }
+        };
 
         return new AgentLoader() {
             @NotNull
