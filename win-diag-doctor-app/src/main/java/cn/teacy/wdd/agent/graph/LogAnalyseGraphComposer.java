@@ -23,7 +23,7 @@ public class LogAnalyseGraphComposer {
     private final MemorySaver saver = new MemorySaver();
 
     @GraphKey
-    public static final String KEY_QUERY = "query";
+    public static final String KEY_QUERY = "input";
 
     @GraphKey
     public static final String KEY_PRIVILEGE_QUALIFIED = "privilege-qualified";
@@ -42,6 +42,9 @@ public class LogAnalyseGraphComposer {
 
     @GraphKey
     public static final String KEY_ANALYSE_REPORT = "analyse-report";
+
+    @GraphKey(strategy = AppendStrategy.class)
+    public static final String KEY_MESSAGES = "messages";
 
     private static final String NODE_PRIVILEGE_CHECKER = "privilege-checker";
     private static final String NODE_EXECUTION_PLANNER = "execution-planner";

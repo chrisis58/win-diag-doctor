@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.felipestanzani.jtoon.JToon;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.tool.ToolCallback;
@@ -23,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import static cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer.KEY_MESSAGES;
 
 @Component
 public class ExecutionPlannerNode implements AsyncNodeActionWithConfig {
@@ -84,7 +87,8 @@ public class ExecutionPlannerNode implements AsyncNodeActionWithConfig {
 
         return CompletableFuture.completedFuture(Map.of(
                 KEY_EXECUTION_PLAN, plannerResponse.executionPlan(),
-                KEY_EXECUTOR_INSTRUCTION, plannerResponse.executorInstruction()
+                KEY_EXECUTOR_INSTRUCTION, plannerResponse.executorInstruction(),
+                KEY_MESSAGES, new AssistantMessage(plannerResponse.executionPlan)
         ));
     }
 }

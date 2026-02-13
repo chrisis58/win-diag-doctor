@@ -10,16 +10,19 @@ import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static cn.teacy.wdd.agent.graph.LogAnalyseGraphComposer.KEY_MESSAGES;
 import static com.alibaba.cloud.ai.graph.agent.tools.ToolContextConstants.AGENT_CONFIG_CONTEXT_KEY;
 
 @Component
@@ -65,7 +68,12 @@ public class PlanExecutorNode implements AsyncNodeActionWithConfig {
 
         return CompletableFuture.completedFuture(Map.of(
                 KEY_EVENT_LOG_RESULT, new ExecutionRecord(executionInstruction, content),
-                KEY_EXECUTOR_INSTRUCTION, ""
+                KEY_EXECUTOR_INSTRUCTION, "",
+                KEY_MESSAGES, new ToolResponseMessage(Collections.singletonList(new ToolResponseMessage.ToolResponse(
+                        "query-digest-Log",
+                        "Query & Digest Log Result",
+                        content
+                )))
         ));
     }
 }

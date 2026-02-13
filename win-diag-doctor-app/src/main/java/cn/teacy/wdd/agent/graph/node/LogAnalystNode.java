@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.converter.BeanOutputConverter;
@@ -46,6 +47,7 @@ public class LogAnalystNode implements AsyncNodeActionWithConfig {
     private static final String KEY_QUERY = LogAnalyseGraphComposer.KEY_QUERY;
     private static final String KEY_ANALYSE_REPORT = LogAnalyseGraphComposer.KEY_ANALYSE_REPORT;
     private static final String KEY_EXECUTOR_INSTRUCTION = LogAnalyseGraphComposer.KEY_EXECUTOR_INSTRUCTION;
+    private static final String KEY_MESSAGES = LogAnalyseGraphComposer.KEY_MESSAGES;
 
 
     record AnalyseReport(
@@ -98,7 +100,8 @@ public class LogAnalystNode implements AsyncNodeActionWithConfig {
         return CompletableFuture.completedFuture(Map.of(
                 KEY_ANALYSE_REPORT, report.report(),
                 KEY_EXECUTOR_INSTRUCTION, report.newInstruction() != null ? report.newInstruction() : "",
-                KEY_ITERATION_COUNT, iterationCount + 1
+                KEY_ITERATION_COUNT, iterationCount + 1,
+                KEY_MESSAGES, new AssistantMessage(report.report)
         ));
     }
 }
