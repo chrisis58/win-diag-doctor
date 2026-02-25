@@ -8,7 +8,6 @@ import cn.teacy.wdd.agent.utils.ModelChatUtils;
 import com.alibaba.cloud.ai.graph.OverAllState;
 import com.alibaba.cloud.ai.graph.RunnableConfig;
 import com.alibaba.cloud.ai.graph.action.AsyncNodeActionWithConfig;
-import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -45,11 +44,6 @@ public class PlanExecutorNode implements AsyncNodeActionWithConfig {
     private static final String KEY_EXECUTOR_INSTRUCTION = LogAnalyseGraphComposer.KEY_EXECUTOR_INSTRUCTION;
     private static final String KEY_EVENT_LOG_RESULT = LogAnalyseGraphComposer.KEY_EVENT_LOG_RESULT;
 
-    record ExecutionRecord(
-            @JacksonXmlProperty(localName = "action") String action,
-            @JacksonXmlProperty(localName = "result") String result
-    ) {}
-
     @Override
     public CompletableFuture<Map<String, Object>> apply(OverAllState state, RunnableConfig config) {
         Optional<Object> value = state.value(KEY_EXECUTOR_INSTRUCTION);
@@ -67,7 +61,7 @@ public class PlanExecutorNode implements AsyncNodeActionWithConfig {
         String content = ModelChatUtils.extractContent(response, "ERROR");
 
         return CompletableFuture.completedFuture(Map.of(
-                KEY_EVENT_LOG_RESULT, new ExecutionRecord(executionInstruction, content),
+                KEY_EVENT_LOG_RESULT, new LogAnalyseGraphComposer.ExecutionRecord(executionInstruction, content),
                 KEY_EXECUTOR_INSTRUCTION, "",
                 KEY_MESSAGES, new ToolResponseMessage(Collections.singletonList(new ToolResponseMessage.ToolResponse(
                         "query-digest-Log",
