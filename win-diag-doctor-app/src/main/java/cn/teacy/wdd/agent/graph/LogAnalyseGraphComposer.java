@@ -3,10 +3,7 @@ package cn.teacy.wdd.agent.graph;
 import cn.teacy.ai.annotation.*;
 import cn.teacy.wdd.agent.graph.dispatcher.LoopAnalystDispatcher;
 import cn.teacy.wdd.agent.graph.dispatcher.PrivilegeCheckDispatcher;
-import cn.teacy.wdd.agent.graph.node.ExecutionPlannerNode;
-import cn.teacy.wdd.agent.graph.node.LogAnalystNode;
-import cn.teacy.wdd.agent.graph.node.PlanExecutorNode;
-import cn.teacy.wdd.agent.graph.node.PrivilegeCheckNode;
+import cn.teacy.wdd.agent.graph.node.*;
 import com.alibaba.cloud.ai.graph.*;
 import com.alibaba.cloud.ai.graph.checkpoint.config.SaverConfig;
 import com.alibaba.cloud.ai.graph.checkpoint.savers.MemorySaver;
@@ -50,6 +47,7 @@ public class LogAnalyseGraphComposer {
     private static final String NODE_EXECUTION_PLANNER = "execution-planner";
     private static final String NODE_PLAN_EXECUTOR = "plan-executor";
     private static final String NODE_ANALYST = "analyst";
+    private static final String NODE_REACT_CHAT = "react-chat";
 
     @GraphNode(id = NODE_PRIVILEGE_CHECKER, isStart = true, description = "Check if the user has privilege to perform log analysis")
     PrivilegeCheckNode privilegeCheckNode;
@@ -66,8 +64,11 @@ public class LogAnalyseGraphComposer {
     @GraphNode(id = NODE_ANALYST, description = "Analyze the execution transcript and generate a report, loop back if context is insufficient")
     LogAnalystNode analyst;
 
-    @ConditionalEdge(source = NODE_ANALYST, mappings = {"end", StateGraph.END, "loop", NODE_PLAN_EXECUTOR})
+    @ConditionalEdge(source = NODE_ANALYST, mappings = {"end", NODE_REACT_CHAT, "loop", NODE_PLAN_EXECUTOR})
     LoopAnalystDispatcher needLoopCondition;
+
+    @GraphNode(id = NODE_REACT_CHAT, next = StateGraph.END)
+    ReactChatNode reactChat;
 
     @GraphCompileConfig
     final CompileConfig config = CompileConfig.builder()
